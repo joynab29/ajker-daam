@@ -1,0 +1,35 @@
+:root {
+  --green: #0e3d2f;
+  --lime: #c3e821;
+  --ink: #0e2a1f;
+  --muted: #5c6b63;
+  --bg: #ffffff;
+
+  font-family: system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+h1 {
+  color: var(--green);
+}
+
+button {
+  background: var(--lime);
+  color: var(--green);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: bold;
+  cursor: pointer;
+}

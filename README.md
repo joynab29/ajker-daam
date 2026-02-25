@@ -7,6 +7,11 @@ Crowd-sourced market price tracker for Bangladesh essentials.
 - `client/` — React + Vite (JS)
 - `server/` — Express + Mongoose (JS, ESM)
 
+## Prereqs
+
+- Node.js 20+
+- MongoDB running locally (default URI `mongodb://127.0.0.1:27017/ajker_daam`)
+
 ## Run locally
 
 ```bash
