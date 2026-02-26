@@ -4,6 +4,8 @@ import cors from 'cors'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { connectDb } from './db.js'
+import authRoutes from './routes/auth.js'
+import { requireAuth } from './middleware/auth.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -15,6 +17,12 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' })
+})
+
+app.use('/api/auth', authRoutes)
+
+app.get('/api/me', requireAuth, (req, res) => {
+  res.json({ user: req.user })
 })
 
 const port = process.env.PORT || 4000

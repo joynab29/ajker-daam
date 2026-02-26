@@ -1,21 +1,25 @@
-import { useEffect, useState } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './AuthContext.jsx'
+import Nav from './Nav.jsx'
+import Home from './pages/Home.jsx'
+import Login from './pages/Login.jsx'
+import Signup from './pages/Signup.jsx'
 import './App.css'
 
 function App() {
-  const [health, setHealth] = useState('...')
-
-  useEffect(() => {
-    fetch('http://localhost:4000/api/health')
-      .then((r) => r.json())
-      .then((d) => setHealth(d.status))
-      .catch(() => setHealth('server unreachable'))
-  }, [])
-
   return (
-    <main>
-      <h1>Ajker Daam</h1>
-      <p>API: {health}</p>
-    </main>
+    <AuthProvider>
+      <BrowserRouter>
+        <Nav />
+        <main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+          </Routes>
+        </main>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 
