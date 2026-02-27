@@ -1,9 +1,12 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './AuthContext.jsx'
+import RequireRole from './RequireRole.jsx'
 import Nav from './Nav.jsx'
 import Home from './pages/Home.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
+import ProductDetail from './pages/ProductDetail.jsx'
+import Admin from './pages/Admin.jsx'
 import './App.css'
 
 function App() {
@@ -16,6 +19,15 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/products/:id" element={<ProductDetail />} />
+            <Route
+              path="/admin"
+              element={
+                <RequireRole roles={['admin']}>
+                  <Admin />
+                </RequireRole>
+              }
+            />
           </Routes>
         </main>
       </BrowserRouter>
