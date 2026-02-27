@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { connectDb } from './db.js'
 import authRoutes from './routes/auth.js'
 import { requireAuth } from './middleware/auth.js'
+import { requireRole } from './middleware/role.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -23,6 +24,10 @@ app.use('/api/auth', authRoutes)
 
 app.get('/api/me', requireAuth, (req, res) => {
   res.json({ user: req.user })
+})
+
+app.get('/api/admin/ping', requireAuth, requireRole('admin'), (_req, res) => {
+  res.json({ ok: true })
 })
 
 const port = process.env.PORT || 4000
