@@ -6,6 +6,7 @@ export default function Nav() {
   return (
     <nav style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--green)', color: '#fff' }}>
       <Link to="/" style={{ color: '#fff' }}>Home</Link>
+      {user && <Link to="/submit" style={{ color: '#fff' }}>Submit</Link>}
       {user && user.role === 'vendor' && <Link to="/vendor" style={{ color: '#fff' }}>Vendor</Link>}
       {user && user.role === 'admin' && <Link to="/admin" style={{ color: '#fff' }}>Admin</Link>}
       <span style={{ flex: 1 }} />

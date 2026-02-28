@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { connectDb } from './db.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
+import priceRoutes from './routes/prices.js'
 import { requireAuth } from './middleware/auth.js'
 import { requireRole } from './middleware/role.js'
 
@@ -23,6 +24,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
+app.use('/api/prices', priceRoutes)
 
 app.get('/api/me', requireAuth, (req, res) => {
   res.json({ user: req.user })

@@ -7,6 +7,7 @@ import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import ProductDetail from './pages/ProductDetail.jsx'
 import Admin from './pages/Admin.jsx'
+import Submit from './pages/Submit.jsx'
 import './App.css'
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/products/:id" element={<ProductDetail />} />
+            <Route path="/submit" element={<Submit />} />
             <Route
               path="/admin"
               element={
