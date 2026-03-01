@@ -8,6 +8,7 @@ import Signup from './pages/Signup.jsx'
 import ProductDetail from './pages/ProductDetail.jsx'
 import Admin from './pages/Admin.jsx'
 import Submit from './pages/Submit.jsx'
+import Vendor from './pages/Vendor.jsx'
 import './App.css'
 
 function App() {
@@ -22,6 +23,14 @@ function App() {
             <Route path="/signup" element={<Signup />} />
             <Route path="/products/:id" element={<ProductDetail />} />
             <Route path="/submit" element={<Submit />} />
+            <Route
+              path="/vendor"
+              element={
+                <RequireRole roles={['vendor']}>
+                  <Vendor />
+                </RequireRole>
+              }
+            />
             <Route
               path="/admin"
               element={
