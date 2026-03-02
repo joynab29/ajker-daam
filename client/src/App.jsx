@@ -9,6 +9,13 @@ import ProductDetail from './pages/ProductDetail.jsx'
 import Admin from './pages/Admin.jsx'
 import Submit from './pages/Submit.jsx'
 import Vendor from './pages/Vendor.jsx'
+import Dashboard from './pages/Dashboard.jsx'
+import Compare from './pages/Compare.jsx'
+import Search from './pages/Search.jsx'
+import History from './pages/History.jsx'
+import Anomalies from './pages/Anomalies.jsx'
+import Leaderboard from './pages/Leaderboard.jsx'
+import Marketplace from './pages/Marketplace.jsx'
 import './App.css'
 
 function App() {
@@ -19,6 +26,13 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/compare" element={<Compare />} />
+            <Route path="/search" element={<Search />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/anomalies" element={<Anomalies />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/products/:id" element={<ProductDetail />} />
