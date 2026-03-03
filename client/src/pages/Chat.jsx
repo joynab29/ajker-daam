@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { Title, Paper, TextInput, Button, Group, Text, Stack } from '@mantine/core'
 import { socket } from '../socket.js'
 import { useAuth } from '../AuthContext.jsx'
 
@@ -33,26 +32,22 @@ export default function Chat() {
 
   return (
     <div>
-      <Title order={1} mb="md">Community chat</Title>
-      <Paper withBorder p="sm" radius="md" h={360} style={{ overflowY: 'auto' }} ref={listRef}>
-        <Stack gap={4}>
-          {messages.map((m) => (
-            <Text key={m.id} size="sm">
-              <Text span fw={600} c="green.9">{m.name}</Text>{' '}
-              <Text span size="xs" c="dimmed">({m.role})</Text>: {m.text}
-            </Text>
-          ))}
-        </Stack>
-      </Paper>
+      <h1>Community chat</h1>
+      <div ref={listRef} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12, height: 360, overflowY: 'auto' }}>
+        {messages.map((m) => (
+          <div key={m.id} style={{ marginBottom: 6 }}>
+            <strong style={{ color: 'var(--green)' }}>{m.name}</strong>{' '}
+            <small>({m.role})</small>: {m.text}
+          </div>
+        ))}
+      </div>
       {user ? (
-        <form onSubmit={send}>
-          <Group gap="xs" mt="sm">
-            <TextInput style={{ flex: 1 }} value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message..." />
-            <Button type="submit">Send</Button>
-          </Group>
+        <form onSubmit={send} style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+          <input style={{ flex: 1 }} value={text} onChange={(e) => setText(e.target.value)} placeholder="Type a message..." />
+          <button type="submit">Send</button>
         </form>
       ) : (
-        <Text mt="sm">Login to send messages.</Text>
+        <p>Login to send messages.</p>
       )}
     </div>
   )

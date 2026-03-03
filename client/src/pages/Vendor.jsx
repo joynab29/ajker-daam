@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Title, TextInput, NumberInput, Button, Group, Table, Text } from '@mantine/core'
 import { api, apiUpload } from '../api.js'
 
 export default function Vendor() {
@@ -38,43 +37,41 @@ export default function Vendor() {
 
   return (
     <div>
-      <Title order={1} mb="md">Vendor — Publish Prices</Title>
-      <Group gap="xs" mb="md">
-        <TextInput placeholder="shop area" value={area} onChange={(e) => setArea(e.target.value)} />
-        <TextInput placeholder="shop district" value={district} onChange={(e) => setDistrict(e.target.value)} />
-      </Group>
-      {msg && <Text mb="sm">{msg}</Text>}
-      <Table striped withTableBorder>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Product</Table.Th>
-            <Table.Th>Unit</Table.Th>
-            <Table.Th>Your price</Table.Th>
-            <Table.Th></Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
+      <h1>Vendor — Publish Prices</h1>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <input placeholder="shop area" value={area} onChange={(e) => setArea(e.target.value)} />
+        <input placeholder="shop district" value={district} onChange={(e) => setDistrict(e.target.value)} />
+      </div>
+      {msg && <p>{msg}</p>}
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+        <thead>
+          <tr>
+            <th style={{ textAlign: 'left' }}>Product</th>
+            <th style={{ textAlign: 'left' }}>Unit</th>
+            <th style={{ textAlign: 'left' }}>Your price</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
           {products.map((p) => (
-            <Table.Tr key={p._id}>
-              <Table.Td>{p.name}</Table.Td>
-              <Table.Td>{p.unit}</Table.Td>
-              <Table.Td>
-                <NumberInput
-                  size="xs"
+            <tr key={p._id} style={{ borderBottom: '1px solid #eee' }}>
+              <td>{p.name}</td>
+              <td>{p.unit}</td>
+              <td>
+                <input
+                  type="number"
+                  step="0.01"
                   value={(drafts[p._id] || {}).price || ''}
-                  onChange={(v) => setDraft(p._id, 'price', v ?? '')}
-                  min={0}
-                  decimalScale={2}
-                  w={120}
+                  onChange={(e) => setDraft(p._id, 'price', e.target.value)}
                 />
-              </Table.Td>
-              <Table.Td>
-                <Button size="xs" onClick={() => publish(p)}>Publish</Button>
-              </Table.Td>
-            </Table.Tr>
+              </td>
+              <td>
+                <button onClick={() => publish(p)}>Publish</button>
+              </td>
+            </tr>
           ))}
-        </Table.Tbody>
-      </Table>
+        </tbody>
+      </table>
     </div>
   )
 }

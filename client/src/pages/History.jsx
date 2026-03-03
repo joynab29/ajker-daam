@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Title, Select, Table, Text, Group } from '@mantine/core'
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Legend } from 'recharts'
 import { api } from '../api.js'
 
@@ -7,7 +6,7 @@ export default function History() {
   const [products, setProducts] = useState([])
   const [productId, setProductId] = useState('')
   const [history, setHistory] = useState([])
-  const [days, setDays] = useState('30')
+  const [days, setDays] = useState(30)
 
   useEffect(() => {
     api('/products').then((d) => {
@@ -23,30 +22,22 @@ export default function History() {
 
   return (
     <div>
-      <Title order={1} mb="md">Price history</Title>
-      <Group gap="sm" mb="md">
-        <Select
-          value={productId}
-          onChange={(v) => setProductId(v || '')}
-          data={products.map((p) => ({ value: p._id, label: p.name }))}
-          allowDeselect={false}
-          w={220}
-        />
-        <Select
-          value={days}
-          onChange={(v) => setDays(v || '30')}
-          data={[
-            { value: '7', label: 'Last 7 days' },
-            { value: '30', label: 'Last 30 days' },
-            { value: '90', label: 'Last 90 days' },
-          ]}
-          allowDeselect={false}
-          w={180}
-        />
-      </Group>
+      <h1>Price history</h1>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+        <select value={productId} onChange={(e) => setProductId(e.target.value)}>
+          {products.map((p) => (
+            <option key={p._id} value={p._id}>{p.name}</option>
+          ))}
+        </select>
+        <select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+          <option value={7}>Last 7 days</option>
+          <option value={30}>Last 30 days</option>
+          <option value={90}>Last 90 days</option>
+        </select>
+      </div>
 
       {history.length === 0 ? (
-        <Text>No history.</Text>
+        <p>No history.</p>
       ) : (
         <>
           <div style={{ width: '100%', height: 280 }}>
@@ -64,28 +55,28 @@ export default function History() {
             </ResponsiveContainer>
           </div>
 
-          <Table mt="md" striped withTableBorder>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Date</Table.Th>
-                <Table.Th ta="right">Avg</Table.Th>
-                <Table.Th ta="right">Min</Table.Th>
-                <Table.Th ta="right">Max</Table.Th>
-                <Table.Th ta="right">Reports</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
+          <table style={{ borderCollapse: 'collapse', width: '100%', marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: 'left' }}>Date</th>
+                <th style={{ textAlign: 'right' }}>Avg</th>
+                <th style={{ textAlign: 'right' }}>Min</th>
+                <th style={{ textAlign: 'right' }}>Max</th>
+                <th style={{ textAlign: 'right' }}>Reports</th>
+              </tr>
+            </thead>
+            <tbody>
               {history.map((r) => (
-                <Table.Tr key={r.date}>
-                  <Table.Td>{r.date}</Table.Td>
-                  <Table.Td ta="right">{r.avg.toFixed(2)}</Table.Td>
-                  <Table.Td ta="right">{r.min}</Table.Td>
-                  <Table.Td ta="right">{r.max}</Table.Td>
-                  <Table.Td ta="right">{r.count}</Table.Td>
-                </Table.Tr>
+                <tr key={r.date} style={{ borderBottom: '1px solid #eee' }}>
+                  <td>{r.date}</td>
+                  <td style={{ textAlign: 'right' }}>{r.avg.toFixed(2)}</td>
+                  <td style={{ textAlign: 'right' }}>{r.min}</td>
+                  <td style={{ textAlign: 'right' }}>{r.max}</td>
+                  <td style={{ textAlign: 'right' }}>{r.count}</td>
+                </tr>
               ))}
-            </Table.Tbody>
-          </Table>
+            </tbody>
+          </table>
         </>
       )}
     </div>

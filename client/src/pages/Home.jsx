@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Title, Text, SimpleGrid, Card, Image, Anchor, Alert } from '@mantine/core'
 import { api } from '../api.js'
 
 export default function Home() {
@@ -15,27 +14,21 @@ export default function Home() {
 
   return (
     <div>
-      <Title order={1} mb="md">Products</Title>
-      {err && <Alert color="red" mb="sm">{err}</Alert>}
+      <h1>Products</h1>
+      {err && <p style={{ color: 'red' }}>{err}</p>}
       {products.length === 0 ? (
-        <Text>No products yet.</Text>
+        <p>No products yet.</p>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing="md">
+        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
           {products.map((p) => (
-            <Card key={p._id} withBorder padding="sm" radius="md">
-              {p.imageUrl && (
-                <Card.Section>
-                  <Image src={p.imageUrl} alt={p.name} h={100} fit="cover" />
-                </Card.Section>
-              )}
-              <Title order={3} mt="xs">{p.name}</Title>
-              <Text size="sm" c="dimmed">per {p.unit}</Text>
-              <Anchor component={Link} to={`/products/${p._id}`} mt="xs">
-                View prices →
-              </Anchor>
-            </Card>
+            <li key={p._id} style={{ border: '1px solid #ddd', padding: 12, borderRadius: 8 }}>
+              {p.imageUrl && <img src={p.imageUrl} alt={p.name} style={{ width: '100%', height: 100, objectFit: 'cover' }} />}
+              <h3>{p.name}</h3>
+              <p>per {p.unit}</p>
+              <Link to={`/products/${p._id}`}>View prices →</Link>
+            </li>
           ))}
-        </SimpleGrid>
+        </ul>
       )}
     </div>
   )

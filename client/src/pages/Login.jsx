@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { Title, TextInput, PasswordInput, Button, Stack, Alert, Anchor, Text } from '@mantine/core'
 import { api } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 
@@ -27,30 +26,33 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 360 }}>
-      <Title order={1} mb="md">Login</Title>
+    <div>
+      <h1>Login</h1>
       <form onSubmit={submit}>
-        <Stack gap="sm">
-          <TextInput
+        <div>
+          <input
             type="email"
             placeholder="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <PasswordInput
+        </div>
+        <div>
+          <input
+            type="password"
             placeholder="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <Button type="submit">Login</Button>
-        </Stack>
+        </div>
+        <button type="submit">Login</button>
       </form>
-      {err && <Alert color="red" mt="sm">{err}</Alert>}
-      <Text mt="sm">
-        No account? <Anchor component={Link} to="/signup">Sign up</Anchor>
-      </Text>
+      {err && <p style={{ color: 'red' }}>{err}</p>}
+      <p>
+        No account? <Link to="/signup">Sign up</Link>
+      </p>
     </div>
   )
 }

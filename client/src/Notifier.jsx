@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Button, Text } from '@mantine/core'
 import { socket } from './socket.js'
 
 export default function Notifier() {
@@ -26,7 +25,9 @@ export default function Notifier() {
   if (perm === 'unsupported') return null
 
   if (perm === 'granted') {
-    return <Text size="xs" c="white">🔔 alerts on</Text>
+    return (
+      <span style={{ fontSize: 12, color: '#ddd' }}>🔔 alerts on</span>
+    )
   }
 
   function ask() {
@@ -34,8 +35,8 @@ export default function Notifier() {
   }
 
   return (
-    <Button size="xs" variant="outline" color="lime" onClick={ask}>
+    <button onClick={ask} style={{ background: 'transparent', border: '1px solid #fff', color: '#fff' }}>
       Enable alerts
-    </Button>
+    </button>
   )
 }

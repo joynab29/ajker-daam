@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Title, Text, Table, Button } from '@mantine/core'
 import { api } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 
@@ -25,45 +24,45 @@ export default function Anomalies() {
 
   return (
     <div>
-      <Title order={1} mb="xs">Anomalies</Title>
-      <Text mb="md">Reports that deviate &gt;20% from the 7-day average.</Text>
+      <h1>Anomalies</h1>
+      <p>Reports that deviate &gt;20% from the 7-day average.</p>
       {items.length === 0 ? (
-        <Text>No anomalies yet.</Text>
+        <p>No anomalies yet.</p>
       ) : (
-        <Table striped withTableBorder>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>When</Table.Th>
-              <Table.Th>Product</Table.Th>
-              <Table.Th ta="right">Price</Table.Th>
-              <Table.Th>Reason</Table.Th>
-              <Table.Th>By</Table.Th>
-              <Table.Th>Status</Table.Th>
-              {user?.role === 'admin' && <Table.Th></Table.Th>}
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
+        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left' }}>When</th>
+              <th style={{ textAlign: 'left' }}>Product</th>
+              <th style={{ textAlign: 'right' }}>Price</th>
+              <th style={{ textAlign: 'left' }}>Reason</th>
+              <th style={{ textAlign: 'left' }}>By</th>
+              <th style={{ textAlign: 'left' }}>Status</th>
+              {user?.role === 'admin' && <th></th>}
+            </tr>
+          </thead>
+          <tbody>
             {items.map((p) => (
-              <Table.Tr key={p._id} style={{ background: p.status === 'flagged' ? '#ffe8e8' : 'transparent' }}>
-                <Table.Td>{new Date(p.createdAt).toLocaleString()}</Table.Td>
-                <Table.Td>{p.productId?.name}</Table.Td>
-                <Table.Td ta="right">{p.price} / {p.unit}</Table.Td>
-                <Table.Td>{p.anomalyReason}</Table.Td>
-                <Table.Td>{p.userId?.name} ({p.source})</Table.Td>
-                <Table.Td>{p.status}</Table.Td>
+              <tr key={p._id} style={{ borderBottom: '1px solid #eee', background: p.status === 'flagged' ? '#ffe8e8' : 'transparent' }}>
+                <td>{new Date(p.createdAt).toLocaleString()}</td>
+                <td>{p.productId?.name}</td>
+                <td style={{ textAlign: 'right' }}>{p.price} / {p.unit}</td>
+                <td>{p.anomalyReason}</td>
+                <td>{p.userId?.name} ({p.source})</td>
+                <td>{p.status}</td>
                 {user?.role === 'admin' && (
-                  <Table.Td>
+                  <td>
                     {p.status === 'flagged' ? (
-                      <Button size="xs" variant="default" onClick={() => setStatus(p._id, 'ok')}>Unflag</Button>
+                      <button onClick={() => setStatus(p._id, 'ok')}>Unflag</button>
                     ) : (
-                      <Button size="xs" color="red" onClick={() => setStatus(p._id, 'flagged')}>Flag as fraud</Button>
+                      <button onClick={() => setStatus(p._id, 'flagged')}>Flag as fraud</button>
                     )}
-                  </Table.Td>
+                  </td>
                 )}
-              </Table.Tr>
+              </tr>
             ))}
-          </Table.Tbody>
-        </Table>
+          </tbody>
+        </table>
       )}
     </div>
   )
