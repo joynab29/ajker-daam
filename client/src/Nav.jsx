@@ -1,33 +1,46 @@
 import { Link } from 'react-router-dom'
+import { Group, Anchor, Button, Text } from '@mantine/core'
 import { useAuth } from './AuthContext.jsx'
+import Notifier from './Notifier.jsx'
+
+const linkStyle = { color: '#fff' }
 
 export default function Nav() {
   const { user, logout } = useAuth()
   return (
-    <nav style={{ display: 'flex', gap: 12, padding: 12, background: 'var(--green)', color: '#fff' }}>
-      <Link to="/" style={{ color: '#fff' }}>Home</Link>
-      <Link to="/dashboard" style={{ color: '#fff' }}>Live</Link>
-      <Link to="/compare" style={{ color: '#fff' }}>Compare</Link>
-      <Link to="/search" style={{ color: '#fff' }}>Search</Link>
-      <Link to="/history" style={{ color: '#fff' }}>History</Link>
-      <Link to="/anomalies" style={{ color: '#fff' }}>Anomalies</Link>
-      <Link to="/leaderboard" style={{ color: '#fff' }}>Leaderboard</Link>
-      <Link to="/marketplace" style={{ color: '#fff' }}>Marketplace</Link>
-      {user && <Link to="/submit" style={{ color: '#fff' }}>Submit</Link>}
-      {user && user.role === 'vendor' && <Link to="/vendor" style={{ color: '#fff' }}>Vendor</Link>}
-      {user && user.role === 'admin' && <Link to="/admin" style={{ color: '#fff' }}>Admin</Link>}
-      <span style={{ flex: 1 }} />
+    <Group
+      gap="md"
+      px="md"
+      py="sm"
+      style={{ background: 'var(--green)', color: '#fff' }}
+      wrap="wrap"
+    >
+      <Anchor component={Link} to="/" style={linkStyle}>Home</Anchor>
+      <Anchor component={Link} to="/dashboard" style={linkStyle}>Live</Anchor>
+      <Anchor component={Link} to="/compare" style={linkStyle}>Compare</Anchor>
+      <Anchor component={Link} to="/search" style={linkStyle}>Search</Anchor>
+      <Anchor component={Link} to="/history" style={linkStyle}>History</Anchor>
+      <Anchor component={Link} to="/anomalies" style={linkStyle}>Anomalies</Anchor>
+      <Anchor component={Link} to="/leaderboard" style={linkStyle}>Leaderboard</Anchor>
+      <Anchor component={Link} to="/marketplace" style={linkStyle}>Marketplace</Anchor>
+      <Anchor component={Link} to="/chat" style={linkStyle}>Chat</Anchor>
+      <Anchor component={Link} to="/map" style={linkStyle}>Map</Anchor>
+      {user && <Anchor component={Link} to="/submit" style={linkStyle}>Submit</Anchor>}
+      {user && user.role === 'vendor' && <Anchor component={Link} to="/vendor" style={linkStyle}>Vendor</Anchor>}
+      {user && user.role === 'admin' && <Anchor component={Link} to="/admin" style={linkStyle}>Admin</Anchor>}
+      <div style={{ flex: 1 }} />
+      <Notifier />
       {user ? (
         <>
-          <span>{user.name} ({user.role})</span>
-          <button onClick={logout}>Logout</button>
+          <Text size="sm" c="white">{user.name} ({user.role})</Text>
+          <Button size="xs" color="lime" onClick={logout}>Logout</Button>
         </>
       ) : (
         <>
-          <Link to="/login" style={{ color: '#fff' }}>Login</Link>
-          <Link to="/signup" style={{ color: '#fff' }}>Sign up</Link>
+          <Anchor component={Link} to="/login" style={linkStyle}>Login</Anchor>
+          <Anchor component={Link} to="/signup" style={linkStyle}>Sign up</Anchor>
         </>
       )}
-    </nav>
+    </Group>
   )
 }

@@ -25,8 +25,24 @@ const io = new SocketServer(server, {
 })
 setIo(io)
 
+const chatHistory = []
+
 io.on('connection', (socket) => {
   console.log('socket connected', socket.id)
+  socket.emit('chat:history', chatHistory)
+  socket.on('chat:send', (msg) => {
+    if (!msg || !msg.text || !msg.name) return
+    const entry = {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+      name: String(msg.name).slice(0, 40),
+      role: msg.role || 'guest',
+      text: String(msg.text).slice(0, 500),
+      at: Date.now(),
+    }
+    chatHistory.push(entry)
+    while (chatHistory.length > 50) chatHistory.shift()
+    io.emit('chat:msg', entry)
+  })
 })
 
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || '*' }))

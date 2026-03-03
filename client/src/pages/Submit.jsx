@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Title, Select, NumberInput, TextInput, FileInput, Button, Stack, Group, Alert, Text } from '@mantine/core'
 import { api, apiUpload } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 
@@ -61,33 +62,42 @@ export default function Submit() {
     }
   }
 
-  if (!user) return <p>Please <a href="/login">login</a> first.</p>
+  if (!user) return <Text>Please <a href="/login">login</a> first.</Text>
 
   return (
-    <div>
-      <h1>Submit a price</h1>
-      <form onSubmit={submit} style={{ display: 'grid', gap: 8, maxWidth: 400 }}>
-        <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
-          {products.map((p) => (
-            <option key={p._id} value={p._id}>
-              {p.name} (per {p.unit})
-            </option>
-          ))}
-        </select>
-        <input type="number" step="0.01" placeholder="price" value={price} onChange={(e) => setPrice(e.target.value)} required />
-        <input placeholder="unit (kg, L, dozen)" value={unit} onChange={(e) => setUnit(e.target.value)} />
-        <input placeholder="area (e.g. Mirpur)" value={area} onChange={(e) => setArea(e.target.value)} />
-        <input placeholder="district (e.g. Dhaka)" value={district} onChange={(e) => setDistrict(e.target.value)} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input placeholder="lat" value={lat} onChange={(e) => setLat(e.target.value)} style={{ flex: 1 }} />
-          <input placeholder="lng" value={lng} onChange={(e) => setLng(e.target.value)} style={{ flex: 1 }} />
-          <button type="button" onClick={getLocation}>Use my location</button>
-        </div>
-        <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} />
-        <button type="submit">Submit price</button>
+    <div style={{ maxWidth: 480 }}>
+      <Title order={1} mb="md">Submit a price</Title>
+      <form onSubmit={submit}>
+        <Stack gap="sm">
+          <Select
+            value={productId}
+            onChange={(v) => setProductId(v || '')}
+            data={products.map((p) => ({ value: p._id, label: `${p.name} (per ${p.unit})` }))}
+            required
+            allowDeselect={false}
+          />
+          <NumberInput
+            placeholder="price"
+            value={price}
+            onChange={(v) => setPrice(v ?? '')}
+            min={0}
+            decimalScale={2}
+            required
+          />
+          <TextInput placeholder="unit (kg, L, dozen)" value={unit} onChange={(e) => setUnit(e.target.value)} />
+          <TextInput placeholder="area (e.g. Mirpur)" value={area} onChange={(e) => setArea(e.target.value)} />
+          <TextInput placeholder="district (e.g. Dhaka)" value={district} onChange={(e) => setDistrict(e.target.value)} />
+          <Group gap="xs" grow>
+            <TextInput placeholder="lat" value={lat} onChange={(e) => setLat(e.target.value)} />
+            <TextInput placeholder="lng" value={lng} onChange={(e) => setLng(e.target.value)} />
+            <Button type="button" variant="default" onClick={getLocation}>Use my location</Button>
+          </Group>
+          <FileInput accept="image/*" placeholder="photo" value={photo} onChange={setPhoto} />
+          <Button type="submit">Submit price</Button>
+        </Stack>
       </form>
-      {err && <p style={{ color: 'red' }}>{err}</p>}
-      {ok && <p style={{ color: 'green' }}>{ok}</p>}
+      {err && <Alert color="red" mt="sm">{err}</Alert>}
+      {ok && <Alert color="green" mt="sm">{ok}</Alert>}
     </div>
   )
 }

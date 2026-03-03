@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Title, Text, Table } from '@mantine/core'
 import { api } from '../api.js'
 
 export default function Leaderboard() {
@@ -10,32 +11,32 @@ export default function Leaderboard() {
 
   return (
     <div>
-      <h1>Top contributors</h1>
-      <p>Score = total reports − 5 × flagged.</p>
-      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left' }}>#</th>
-            <th style={{ textAlign: 'left' }}>User</th>
-            <th style={{ textAlign: 'right' }}>Total</th>
-            <th style={{ textAlign: 'right' }}>Anomalies</th>
-            <th style={{ textAlign: 'right' }}>Flagged</th>
-            <th style={{ textAlign: 'right' }}>Score</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Title order={1} mb="xs">Top contributors</Title>
+      <Text mb="md">Score = total reports − 5 × flagged.</Text>
+      <Table striped withTableBorder>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>#</Table.Th>
+            <Table.Th>User</Table.Th>
+            <Table.Th ta="right">Total</Table.Th>
+            <Table.Th ta="right">Anomalies</Table.Th>
+            <Table.Th ta="right">Flagged</Table.Th>
+            <Table.Th ta="right">Score</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {rows.map((r, i) => (
-            <tr key={r.user._id} style={{ borderBottom: '1px solid #eee' }}>
-              <td>{i + 1}</td>
-              <td>{r.user.name} ({r.user.role})</td>
-              <td style={{ textAlign: 'right' }}>{r.total}</td>
-              <td style={{ textAlign: 'right' }}>{r.anomalies}</td>
-              <td style={{ textAlign: 'right' }}>{r.flagged}</td>
-              <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{r.score}</td>
-            </tr>
+            <Table.Tr key={r.user._id}>
+              <Table.Td>{i + 1}</Table.Td>
+              <Table.Td>{r.user.name} ({r.user.role})</Table.Td>
+              <Table.Td ta="right">{r.total}</Table.Td>
+              <Table.Td ta="right">{r.anomalies}</Table.Td>
+              <Table.Td ta="right">{r.flagged}</Table.Td>
+              <Table.Td ta="right" fw={700}>{r.score}</Table.Td>
+            </Table.Tr>
           ))}
-        </tbody>
-      </table>
+        </Table.Tbody>
+      </Table>
     </div>
   )
 }

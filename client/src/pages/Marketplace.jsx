@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Title, TextInput, Textarea, NumberInput, FileInput, Button, Stack, Group, SimpleGrid, Card, Image, Text, Alert } from '@mantine/core'
 import { api, apiUpload } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 
@@ -61,50 +62,56 @@ export default function Marketplace() {
 
   return (
     <div>
-      <h1>Farmer Marketplace</h1>
+      <Title order={1} mb="md">Farmer Marketplace</Title>
 
       {user?.role === 'farmer' && (
         <>
-          <h2>Post a listing</h2>
-          <form onSubmit={add} style={{ display: 'grid', gap: 8, maxWidth: 500 }}>
-            <input placeholder="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-            <textarea placeholder="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input type="number" step="0.01" placeholder="price" value={price} onChange={(e) => setPrice(e.target.value)} required style={{ flex: 1 }} />
-              <input placeholder="unit" value={unit} onChange={(e) => setUnit(e.target.value)} style={{ width: 100 }} />
-              <input type="number" placeholder="qty available" value={quantityAvailable} onChange={(e) => setQty(e.target.value)} style={{ flex: 1 }} />
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input placeholder="area" value={area} onChange={(e) => setArea(e.target.value)} style={{ flex: 1 }} />
-              <input placeholder="district" value={district} onChange={(e) => setDistrict(e.target.value)} style={{ flex: 1 }} />
-            </div>
-            <input placeholder="contact (phone/email)" value={contact} onChange={(e) => setContact(e.target.value)} />
-            <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} />
-            <button type="submit">Post listing</button>
+          <Title order={2} mb="sm">Post a listing</Title>
+          <form onSubmit={add}>
+            <Stack gap="sm" maw={520}>
+              <TextInput placeholder="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <Textarea placeholder="description" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Group gap="xs" grow>
+                <NumberInput placeholder="price" value={price} onChange={(v) => setPrice(v ?? '')} min={0} decimalScale={2} required />
+                <TextInput placeholder="unit" value={unit} onChange={(e) => setUnit(e.target.value)} />
+                <NumberInput placeholder="qty available" value={quantityAvailable} onChange={(v) => setQty(v ?? '')} min={0} />
+              </Group>
+              <Group gap="xs" grow>
+                <TextInput placeholder="area" value={area} onChange={(e) => setArea(e.target.value)} />
+                <TextInput placeholder="district" value={district} onChange={(e) => setDistrict(e.target.value)} />
+              </Group>
+              <TextInput placeholder="contact (phone/email)" value={contact} onChange={(e) => setContact(e.target.value)} />
+              <FileInput accept="image/*" placeholder="photo" value={photo} onChange={setPhoto} />
+              <Button type="submit">Post listing</Button>
+            </Stack>
           </form>
-          {err && <p style={{ color: 'red' }}>{err}</p>}
+          {err && <Alert color="red" mt="sm">{err}</Alert>}
         </>
       )}
 
-      <h2>All listings</h2>
+      <Title order={2} mt="lg" mb="sm">All listings</Title>
       {listings.length === 0 ? (
-        <p>No listings yet.</p>
+        <Text>No listings yet.</Text>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
           {listings.map((l) => (
-            <li key={l._id} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
-              {l.imageUrl && <img src={SERVER + l.imageUrl} alt={l.title} style={{ width: '100%', height: 140, objectFit: 'cover' }} />}
-              <h3>{l.title}</h3>
-              <p>{l.price} / {l.unit} {l.quantityAvailable ? `(${l.quantityAvailable} avail)` : ''}</p>
-              {l.description && <p>{l.description}</p>}
-              <p><small>{[l.area, l.district].filter(Boolean).join(', ')}</small></p>
-              <p><small>By {l.farmerId?.name}{l.contact && ` — ${l.contact}`}</small></p>
-              {(user?.id === l.farmerId?._id || user?.role === 'admin') && (
-                <button onClick={() => remove(l._id)}>Delete</button>
+            <Card key={l._id} withBorder padding="sm" radius="md">
+              {l.imageUrl && (
+                <Card.Section>
+                  <Image src={SERVER + l.imageUrl} alt={l.title} h={140} fit="cover" />
+                </Card.Section>
               )}
-            </li>
+              <Title order={3} mt="xs">{l.title}</Title>
+              <Text>{l.price} / {l.unit} {l.quantityAvailable ? `(${l.quantityAvailable} avail)` : ''}</Text>
+              {l.description && <Text size="sm">{l.description}</Text>}
+              <Text size="xs" c="dimmed">{[l.area, l.district].filter(Boolean).join(', ')}</Text>
+              <Text size="xs" c="dimmed">By {l.farmerId?.name}{l.contact && ` — ${l.contact}`}</Text>
+              {(user?.id === l.farmerId?._id || user?.role === 'admin') && (
+                <Button size="xs" color="red" mt="xs" onClick={() => remove(l._id)}>Delete</Button>
+              )}
+            </Card>
           ))}
-        </ul>
+        </SimpleGrid>
       )}
     </div>
   )

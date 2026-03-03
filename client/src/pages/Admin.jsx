@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Title, Tabs, TextInput, Button, Stack, SimpleGrid, Paper, Text, Table, Alert, List, Group } from '@mantine/core'
 import { api } from '../api.js'
 
 export default function Admin() {
@@ -59,78 +60,84 @@ export default function Admin() {
 
   return (
     <div>
-      <h1>Admin</h1>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={() => setTab('overview')} disabled={tab === 'overview'}>Overview</button>
-        <button onClick={() => setTab('products')} disabled={tab === 'products'}>Products</button>
-        <button onClick={() => setTab('users')} disabled={tab === 'users'}>Users</button>
-      </div>
-      {err && <p style={{ color: 'red' }}>{err}</p>}
+      <Title order={1} mb="md">Admin</Title>
+      {err && <Alert color="red" mb="sm">{err}</Alert>}
+      <Tabs value={tab} onChange={setTab}>
+        <Tabs.List>
+          <Tabs.Tab value="overview">Overview</Tabs.Tab>
+          <Tabs.Tab value="products">Products</Tabs.Tab>
+          <Tabs.Tab value="users">Users</Tabs.Tab>
+        </Tabs.List>
 
-      {tab === 'overview' && stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
-          <Card label="Users" value={stats.users} />
-          <Card label="Products" value={stats.products} />
-          <Card label="Reports" value={stats.prices} />
-          <Card label="Anomalies" value={stats.anomalies} />
-          <Card label="Flagged" value={stats.flagged} />
-        </div>
-      )}
+        <Tabs.Panel value="overview" pt="md">
+          {stats && (
+            <SimpleGrid cols={{ base: 2, sm: 3, md: 5 }} spacing="md">
+              <StatCard label="Users" value={stats.users} />
+              <StatCard label="Products" value={stats.products} />
+              <StatCard label="Reports" value={stats.prices} />
+              <StatCard label="Anomalies" value={stats.anomalies} />
+              <StatCard label="Flagged" value={stats.flagged} />
+            </SimpleGrid>
+          )}
+        </Tabs.Panel>
 
-      {tab === 'products' && (
-        <>
-          <form onSubmit={add} style={{ display: 'grid', gap: 8, maxWidth: 400 }}>
-            <input placeholder="name" value={name} onChange={(e) => setName(e.target.value)} required />
-            <input placeholder="unit (e.g. kg, L, dozen)" value={unit} onChange={(e) => setUnit(e.target.value)} />
-            <input placeholder="category" value={category} onChange={(e) => setCategory(e.target.value)} />
-            <input placeholder="image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
-            <button type="submit">Add product</button>
+        <Tabs.Panel value="products" pt="md">
+          <form onSubmit={add}>
+            <Stack gap="sm" maw={400}>
+              <TextInput placeholder="name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <TextInput placeholder="unit (e.g. kg, L, dozen)" value={unit} onChange={(e) => setUnit(e.target.value)} />
+              <TextInput placeholder="category" value={category} onChange={(e) => setCategory(e.target.value)} />
+              <TextInput placeholder="image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+              <Button type="submit">Add product</Button>
+            </Stack>
           </form>
-          <h2>Existing</h2>
-          <ul>
+          <Title order={2} mt="md" mb="sm">Existing</Title>
+          <List spacing="xs">
             {products.map((p) => (
-              <li key={p._id}>
-                {p.name} (per {p.unit}) {p.category && `— ${p.category}`}{' '}
-                <button onClick={() => removeProduct(p._id)}>Delete</button>
-              </li>
+              <List.Item key={p._id}>
+                <Group gap="xs">
+                  <Text>{p.name} (per {p.unit}) {p.category && `— ${p.category}`}</Text>
+                  <Button size="xs" color="red" variant="light" onClick={() => removeProduct(p._id)}>Delete</Button>
+                </Group>
+              </List.Item>
             ))}
-          </ul>
-        </>
-      )}
+          </List>
+        </Tabs.Panel>
 
-      {tab === 'users' && (
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Name</th>
-              <th style={{ textAlign: 'left' }}>Email</th>
-              <th style={{ textAlign: 'left' }}>Role</th>
-              <th style={{ textAlign: 'left' }}>Joined</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u._id} style={{ borderBottom: '1px solid #eee' }}>
-                <td>{u.name}</td>
-                <td>{u.email}</td>
-                <td>{u.role}</td>
-                <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                <td><button onClick={() => removeUser(u._id)}>Delete</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        <Tabs.Panel value="users" pt="md">
+          <Table striped withTableBorder>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>Name</Table.Th>
+                <Table.Th>Email</Table.Th>
+                <Table.Th>Role</Table.Th>
+                <Table.Th>Joined</Table.Th>
+                <Table.Th></Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {users.map((u) => (
+                <Table.Tr key={u._id}>
+                  <Table.Td>{u.name}</Table.Td>
+                  <Table.Td>{u.email}</Table.Td>
+                  <Table.Td>{u.role}</Table.Td>
+                  <Table.Td>{new Date(u.createdAt).toLocaleDateString()}</Table.Td>
+                  <Table.Td><Button size="xs" color="red" onClick={() => removeUser(u._id)}>Delete</Button></Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Tabs.Panel>
+      </Tabs>
     </div>
   )
 }
 
-function Card({ label, value }) {
+function StatCard({ label, value }) {
   return (
-    <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
-      <div style={{ fontSize: 12, color: '#666' }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--green)' }}>{value}</div>
-    </div>
+    <Paper withBorder p="md" radius="md">
+      <Text size="xs" c="dimmed">{label}</Text>
+      <Text size="xl" fw={700}>{value}</Text>
+    </Paper>
   )
 }
