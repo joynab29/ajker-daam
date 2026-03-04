@@ -12,8 +12,6 @@ const priceReportSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   source: { type: String, enum: ['consumer', 'vendor'], default: 'consumer' },
   status: { type: String, enum: ['ok', 'flagged'], default: 'ok' },
-  isAnomaly: { type: Boolean, default: false },
-  anomalyReason: { type: String, default: '' },
   createdAt: { type: Date, default: Date.now },
 })
 
