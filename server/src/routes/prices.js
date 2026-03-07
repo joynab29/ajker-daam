@@ -1,10 +1,39 @@
 import { Router } from 'express'
+import mongoose from 'mongoose'
 import { PriceReport } from '../models/PriceReport.js'
 import { requireAuth } from '../middleware/auth.js'
 import { upload } from '../middleware/upload.js'
 import { emit } from '../realtime.js'
 
 const router = Router()
+
+router.get('/by-area', async (req, res) => {
+  const { productId } = req.query
+  if (!productId) return res.status(400).json({ error: 'productId required' })
+  const rows = await PriceReport.aggregate([
+    { $match: { productId: new mongoose.Types.ObjectId(productId) } },
+    {
+      $group: {
+        _id: { area: '$area', district: '$district' },
+        avg: { $avg: '$price' },
+        min: { $min: '$price' },
+        max: { $max: '$price' },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { avg: 1 } },
+  ])
+  res.json({
+    rows: rows.map((r) => ({
+      area: r._id.area,
+      district: r._id.district,
+      avg: r.avg,
+      min: r.min,
+      max: r.max,
+      count: r.count,
+    })),
+  })
+})
 
 router.get('/', async (req, res) => {
   const { productId, area, district } = req.query
