@@ -11,6 +11,7 @@ import Submit from './pages/Submit.jsx'
 import Vendor from './pages/Vendor.jsx'
 import Dashboard from './pages/Dashboard.jsx'
 import Compare from './pages/Compare.jsx'
+import Search from './pages/Search.jsx'
 import './App.css'
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/compare" element={<Compare />} />
+            <Route path="/search" element={<Search />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/products/:id" element={<ProductDetail />} />

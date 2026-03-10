@@ -36,16 +36,26 @@ router.get('/by-area', async (req, res) => {
 })
 
 router.get('/', async (req, res) => {
-  const { productId, area, district } = req.query
+  const { productId, area, district, minPrice, maxPrice, q } = req.query
   const filter = {}
   if (productId) filter.productId = productId
-  if (area) filter.area = area
-  if (district) filter.district = district
-  const prices = await PriceReport.find(filter)
+  if (area) filter.area = new RegExp(area, 'i')
+  if (district) filter.district = new RegExp(district, 'i')
+  if (minPrice || maxPrice) {
+    filter.price = {}
+    if (minPrice) filter.price.$gte = Number(minPrice)
+    if (maxPrice) filter.price.$lte = Number(maxPrice)
+  }
+  let cursor = PriceReport.find(filter)
     .sort({ createdAt: -1 })
     .limit(200)
     .populate('userId', 'name role')
     .populate('productId', 'name unit')
+  let prices = await cursor
+  if (q) {
+    const re = new RegExp(q, 'i')
+    prices = prices.filter((p) => re.test(p.productId?.name || ''))
+  }
   res.json({ prices })
 })
 
