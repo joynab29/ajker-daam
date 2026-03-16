@@ -59,6 +59,8 @@ router.get('/', async (req, res) => {
   res.json({ prices })
 })
 
+const SPIKE_THRESHOLD = 0.2 // 20%
+
 router.post('/', requireAuth, upload.single('photo'), async (req, res) => {
   const { productId, price, unit, lat, lng, area, district } = req.body
   if (!productId || !price) {
@@ -78,11 +80,32 @@ router.post('/', requireAuth, upload.single('photo'), async (req, res) => {
     userId: req.user.id,
     source,
   })
+
+  // naive spike check vs last 7 days
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const recent = await PriceReport.find({
+    productId,
+    _id: { $ne: priceReport._id },
+    createdAt: { $gte: since },
+  })
+  let spike = null
+  if (recent.length > 0) {
+    const avg = recent.reduce((s, r) => s + r.price, 0) / recent.length
+    const change = (Number(price) - avg) / avg
+    if (Math.abs(change) >= SPIKE_THRESHOLD) {
+      spike = { avg, change, direction: change > 0 ? 'up' : 'down' }
+    }
+  }
+
   const populated = await PriceReport.findById(priceReport._id)
     .populate('userId', 'name role')
     .populate('productId', 'name unit')
+
   emit('price:new', populated)
-  res.json({ priceReport: populated })
+  if (spike) {
+    emit('price:spike', { priceReport: populated, ...spike })
+  }
+  res.json({ priceReport: populated, spike })
 })
 
 export default router
