@@ -9,6 +9,7 @@ export default function Nav() {
       <Link to="/dashboard" style={{ color: '#fff' }}>Live</Link>
       <Link to="/compare" style={{ color: '#fff' }}>Compare</Link>
       <Link to="/search" style={{ color: '#fff' }}>Search</Link>
+      <Link to="/history" style={{ color: '#fff' }}>History</Link>
       {user && <Link to="/submit" style={{ color: '#fff' }}>Submit</Link>}
       {user && user.role === 'vendor' && <Link to="/vendor" style={{ color: '#fff' }}>Vendor</Link>}
       {user && user.role === 'admin' && <Link to="/admin" style={{ color: '#fff' }}>Admin</Link>}

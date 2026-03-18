@@ -7,6 +7,39 @@ import { emit } from '../realtime.js'
 
 const router = Router()
 
+router.get('/history', async (req, res) => {
+  const { productId, days } = req.query
+  if (!productId) return res.status(400).json({ error: 'productId required' })
+  const cutoff = new Date(Date.now() - (Number(days) || 30) * 24 * 60 * 60 * 1000)
+  const rows = await PriceReport.aggregate([
+    {
+      $match: {
+        productId: new mongoose.Types.ObjectId(productId),
+        createdAt: { $gte: cutoff },
+      },
+    },
+    {
+      $group: {
+        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+        avg: { $avg: '$price' },
+        min: { $min: '$price' },
+        max: { $max: '$price' },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { _id: 1 } },
+  ])
+  res.json({
+    history: rows.map((r) => ({
+      date: r._id,
+      avg: r.avg,
+      min: r.min,
+      max: r.max,
+      count: r.count,
+    })),
+  })
+})
+
 router.get('/by-area', async (req, res) => {
   const { productId } = req.query
   if (!productId) return res.status(400).json({ error: 'productId required' })
