@@ -7,6 +7,15 @@ import { emit } from '../realtime.js'
 
 const router = Router()
 
+router.get('/anomalies', async (_req, res) => {
+  const items = await PriceReport.find({ isAnomaly: true })
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .populate('userId', 'name role')
+    .populate('productId', 'name unit')
+  res.json({ items })
+})
+
 router.get('/history', async (req, res) => {
   const { productId, days } = req.query
   if (!productId) return res.status(400).json({ error: 'productId required' })
@@ -127,6 +136,11 @@ router.post('/', requireAuth, upload.single('photo'), async (req, res) => {
     const change = (Number(price) - avg) / avg
     if (Math.abs(change) >= SPIKE_THRESHOLD) {
       spike = { avg, change, direction: change > 0 ? 'up' : 'down' }
+      const reason = `${(change * 100).toFixed(0)}% vs 7-day avg ${avg.toFixed(2)}`
+      await PriceReport.findByIdAndUpdate(priceReport._id, {
+        isAnomaly: true,
+        anomalyReason: reason,
+      })
     }
   }
 

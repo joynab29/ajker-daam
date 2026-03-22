@@ -13,6 +13,7 @@ import Dashboard from './pages/Dashboard.jsx'
 import Compare from './pages/Compare.jsx'
 import Search from './pages/Search.jsx'
 import History from './pages/History.jsx'
+import Anomalies from './pages/Anomalies.jsx'
 import './App.css'
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
             <Route path="/compare" element={<Compare />} />
             <Route path="/search" element={<Search />} />
             <Route path="/history" element={<History />} />
+            <Route path="/anomalies" element={<Anomalies />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/products/:id" element={<ProductDetail />} />
