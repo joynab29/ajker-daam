@@ -2,10 +2,25 @@ import { Router } from 'express'
 import mongoose from 'mongoose'
 import { PriceReport } from '../models/PriceReport.js'
 import { requireAuth } from '../middleware/auth.js'
+import { requireRole } from '../middleware/role.js'
 import { upload } from '../middleware/upload.js'
 import { emit } from '../realtime.js'
 
 const router = Router()
+
+router.put('/:id/status', requireAuth, requireRole('admin'), async (req, res) => {
+  const { status } = req.body
+  if (!['ok', 'flagged'].includes(status)) {
+    return res.status(400).json({ error: 'invalid status' })
+  }
+  const item = await PriceReport.findByIdAndUpdate(
+    req.params.id,
+    { status },
+    { new: true }
+  )
+  if (!item) return res.status(404).json({ error: 'not found' })
+  res.json({ item })
+})
 
 router.get('/anomalies', async (_req, res) => {
   const items = await PriceReport.find({ isAnomaly: true })
