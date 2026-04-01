@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import priceRoutes from './routes/prices.js'
 import adminRoutes from './routes/admin.js'
+import userRoutes from './routes/users.js'
 import { requireAuth } from './middleware/auth.js'
 import { requireRole } from './middleware/role.js'
 import { setIo } from './realtime.js'
@@ -39,6 +40,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/products', productRoutes)
 app.use('/api/prices', priceRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/users', userRoutes)
 
 app.get('/api/me', requireAuth, (req, res) => {
   res.json({ user: req.user })

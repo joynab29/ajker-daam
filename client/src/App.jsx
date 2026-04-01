@@ -14,6 +14,7 @@ import Compare from './pages/Compare.jsx'
 import Search from './pages/Search.jsx'
 import History from './pages/History.jsx'
 import Anomalies from './pages/Anomalies.jsx'
+import Leaderboard from './pages/Leaderboard.jsx'
 import './App.css'
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
             <Route path="/search" element={<Search />} />
             <Route path="/history" element={<History />} />
             <Route path="/anomalies" element={<Anomalies />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/products/:id" element={<ProductDetail />} />
