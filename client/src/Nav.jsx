@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from './AuthContext.jsx'
+import Notifier from './Notifier.jsx'
 
 export default function Nav() {
   const { user, logout } = useAuth()
@@ -12,10 +13,14 @@ export default function Nav() {
       <Link to="/history" style={{ color: '#fff' }}>History</Link>
       <Link to="/anomalies" style={{ color: '#fff' }}>Anomalies</Link>
       <Link to="/leaderboard" style={{ color: '#fff' }}>Leaderboard</Link>
+      <Link to="/marketplace" style={{ color: '#fff' }}>Marketplace</Link>
+      <Link to="/chat" style={{ color: '#fff' }}>Chat</Link>
+      <Link to="/map" style={{ color: '#fff' }}>Map</Link>
       {user && <Link to="/submit" style={{ color: '#fff' }}>Submit</Link>}
       {user && user.role === 'vendor' && <Link to="/vendor" style={{ color: '#fff' }}>Vendor</Link>}
       {user && user.role === 'admin' && <Link to="/admin" style={{ color: '#fff' }}>Admin</Link>}
       <span style={{ flex: 1 }} />
+      <Notifier />
       {user ? (
         <>
           <span>{user.name} ({user.role})</span>
