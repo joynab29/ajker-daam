@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { Title, Text, Image, Table, Anchor, Alert, Loader } from '@mantine/core'
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts'
 import { api } from '../api.js'
 
@@ -16,8 +17,8 @@ export default function ProductDetail() {
     api(`/prices?productId=${id}`).then((d) => setPrices(d.prices)).catch(() => {})
   }, [id])
 
-  if (err) return <p style={{ color: 'red' }}>{err}</p>
-  if (!product) return <p>Loading...</p>
+  if (err) return <Alert color="red">{err}</Alert>
+  if (!product) return <Loader />
 
   const chartData = [...prices]
     .reverse()
@@ -28,13 +29,13 @@ export default function ProductDetail() {
 
   return (
     <div>
-      <h1>{product.name}</h1>
-      <p>Unit: {product.unit}</p>
-      {product.imageUrl && <img src={product.imageUrl} alt={product.name} style={{ maxWidth: 400 }} />}
+      <Title order={1} mb="xs">{product.name}</Title>
+      <Text mb="sm">Unit: {product.unit}</Text>
+      {product.imageUrl && <Image src={product.imageUrl} alt={product.name} mah={300} w="auto" mb="md" />}
 
       {chartData.length > 1 && (
         <>
-          <h2>Trend</h2>
+          <Title order={2} mt="md" mb="xs">Trend</Title>
           <div style={{ width: '100%', height: 240 }}>
             <ResponsiveContainer>
               <LineChart data={chartData}>
@@ -49,33 +50,33 @@ export default function ProductDetail() {
         </>
       )}
 
-      <h2>Reported prices</h2>
-      <p><Link to="/submit">+ Submit a price</Link></p>
+      <Title order={2} mt="md" mb="xs">Reported prices</Title>
+      <Anchor component={Link} to="/submit">+ Submit a price</Anchor>
       {prices.length === 0 ? (
-        <p>No reports yet.</p>
+        <Text mt="sm">No reports yet.</Text>
       ) : (
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Price</th>
-              <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Where</th>
-              <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>By</th>
-              <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>When</th>
-              <th style={{ textAlign: 'left', borderBottom: '1px solid #ccc' }}>Photo</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table mt="sm" striped withTableBorder>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Price</Table.Th>
+              <Table.Th>Where</Table.Th>
+              <Table.Th>By</Table.Th>
+              <Table.Th>When</Table.Th>
+              <Table.Th>Photo</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {prices.map((p) => (
-              <tr key={p._id}>
-                <td>{p.price} / {p.unit}</td>
-                <td>{[p.area, p.district].filter(Boolean).join(', ') || '—'}</td>
-                <td>{p.userId?.name} ({p.source})</td>
-                <td>{new Date(p.createdAt).toLocaleString()}</td>
-                <td>{p.photoUrl && <a href={SERVER + p.photoUrl} target="_blank">view</a>}</td>
-              </tr>
+              <Table.Tr key={p._id}>
+                <Table.Td>{p.price} / {p.unit}</Table.Td>
+                <Table.Td>{[p.area, p.district].filter(Boolean).join(', ') || '—'}</Table.Td>
+                <Table.Td>{p.userId?.name} ({p.source})</Table.Td>
+                <Table.Td>{new Date(p.createdAt).toLocaleString()}</Table.Td>
+                <Table.Td>{p.photoUrl && <Anchor href={SERVER + p.photoUrl} target="_blank">view</Anchor>}</Table.Td>
+              </Table.Tr>
             ))}
-          </tbody>
-        </table>
+          </Table.Tbody>
+        </Table>
       )}
     </div>
   )

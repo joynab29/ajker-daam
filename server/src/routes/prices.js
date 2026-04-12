@@ -118,7 +118,7 @@ router.get('/', async (req, res) => {
 
 const SPIKE_THRESHOLD = 0.2 // 20%
 
-router.post('/', requireAuth, upload.single('photo'), async (req, res) => {
+router.post('/', requireAuth, requireRole('consumer', 'vendor'), upload.single('photo'), async (req, res) => {
   const { productId, price, unit, lat, lng, area, district } = req.body
   if (!productId || !price) {
     return res.status(400).json({ error: 'productId and price required' })

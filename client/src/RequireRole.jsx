@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom'
+import { Title, Text } from '@mantine/core'
 import { useAuth } from './AuthContext.jsx'
 
 export default function RequireRole({ roles, children }) {
@@ -7,8 +8,8 @@ export default function RequireRole({ roles, children }) {
   if (roles && !roles.includes(user.role)) {
     return (
       <div>
-        <h1>Forbidden</h1>
-        <p>This page requires role: {roles.join(', ')}</p>
+        <Title order={1}>Forbidden</Title>
+        <Text>This page requires role: {roles.join(', ')}</Text>
       </div>
     )
   }

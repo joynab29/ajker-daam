@@ -14,16 +14,16 @@ router.get('/', async (req, res) => {
   const listings = await Listing.find(filter)
     .sort({ createdAt: -1 })
     .limit(100)
-    .populate('farmerId', 'name')
+    .populate('vendorId', 'name')
   res.json({ listings })
 })
 
-router.post('/', requireAuth, requireRole('farmer'), upload.single('photo'), async (req, res) => {
+router.post('/', requireAuth, requireRole('vendor'), upload.single('photo'), async (req, res) => {
   const { title, description, price, unit, quantityAvailable, area, district, contact } = req.body
   if (!title || !price) return res.status(400).json({ error: 'title and price required' })
   const imageUrl = req.file ? `/uploads/${req.file.filename}` : ''
   const listing = await Listing.create({
-    farmerId: req.user.id,
+    vendorId: req.user.id,
     title,
     description: description || '',
     price: Number(price),
@@ -41,7 +41,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
   const listing = await Listing.findById(req.params.id)
   if (!listing) return res.status(404).json({ error: 'not found' })
   if (
-    listing.farmerId.toString() !== req.user.id &&
+    listing.vendorId.toString() !== req.user.id &&
     req.user.role !== 'admin'
   ) {
     return res.status(403).json({ error: 'forbidden' })

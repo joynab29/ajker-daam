@@ -1,15 +1,39 @@
 import { useEffect, useState } from 'react'
+import {
+  Title,
+  TextInput,
+  NumberInput,
+  Button,
+  Group,
+  Table,
+  Text,
+  Tabs,
+  Stack,
+  Paper,
+  Alert,
+  ActionIcon,
+} from '@mantine/core'
 import { api, apiUpload } from '../api.js'
 
 export default function Vendor() {
+  const [tab, setTab] = useState('publish')
   const [products, setProducts] = useState([])
   const [drafts, setDrafts] = useState({})
   const [area, setArea] = useState('')
   const [district, setDistrict] = useState('')
   const [msg, setMsg] = useState('')
+  const [name, setName] = useState('')
+  const [unit, setUnit] = useState('kg')
+  const [category, setCategory] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const [err, setErr] = useState('')
+
+  function loadProducts() {
+    api('/products').then((d) => setProducts(d.products))
+  }
 
   useEffect(() => {
-    api('/products').then((d) => setProducts(d.products))
+    loadProducts()
   }, [])
 
   function setDraft(id, field, val) {
@@ -35,43 +59,177 @@ export default function Vendor() {
     }
   }
 
+  async function addProduct(e) {
+    e.preventDefault()
+    setErr('')
+    try {
+      await api('/products', {
+        method: 'POST',
+        body: JSON.stringify({ name, unit, category, imageUrl }),
+      })
+      setName('')
+      setCategory('')
+      setImageUrl('')
+      loadProducts()
+    } catch (e) {
+      setErr(e.message)
+    }
+  }
+
+  async function removeProduct(id) {
+    if (!confirm('Delete this product?')) return
+    try {
+      await api(`/products/${id}`, { method: 'DELETE' })
+      loadProducts()
+    } catch (e) {
+      setErr(e.message)
+    }
+  }
+
   return (
-    <div>
-      <h1>Vendor — Publish Prices</h1>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <input placeholder="shop area" value={area} onChange={(e) => setArea(e.target.value)} />
-        <input placeholder="shop district" value={district} onChange={(e) => setDistrict(e.target.value)} />
-      </div>
-      {msg && <p>{msg}</p>}
-      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr>
-            <th style={{ textAlign: 'left' }}>Product</th>
-            <th style={{ textAlign: 'left' }}>Unit</th>
-            <th style={{ textAlign: 'left' }}>Your price</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {products.map((p) => (
-            <tr key={p._id} style={{ borderBottom: '1px solid #eee' }}>
-              <td>{p.name}</td>
-              <td>{p.unit}</td>
-              <td>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={(drafts[p._id] || {}).price || ''}
-                  onChange={(e) => setDraft(p._id, 'price', e.target.value)}
+    <Stack gap="md">
+      <Title order={1}>Vendor</Title>
+      <Tabs value={tab} onChange={setTab}>
+        <Tabs.List>
+          <Tabs.Tab value="publish">Publish prices</Tabs.Tab>
+          <Tabs.Tab value="products">Manage products</Tabs.Tab>
+        </Tabs.List>
+
+        <Tabs.Panel value="publish" pt="md">
+          <Paper withBorder p="md" radius="md" mb="md">
+            <Group grow gap="xs">
+              <TextInput
+                label="Shop area"
+                placeholder="e.g. Mirpur"
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+              />
+              <TextInput
+                label="Shop district"
+                placeholder="e.g. Dhaka"
+                value={district}
+                onChange={(e) => setDistrict(e.target.value)}
+              />
+            </Group>
+          </Paper>
+          {msg && <Alert color="blue" mb="sm">{msg}</Alert>}
+          {products.length === 0 ? (
+            <Text c="dimmed">No products yet. Add some on the Manage products tab.</Text>
+          ) : (
+            <Paper withBorder radius="md">
+              <Table striped highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Product</Table.Th>
+                    <Table.Th>Unit</Table.Th>
+                    <Table.Th>Your price</Table.Th>
+                    <Table.Th></Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {products.map((p) => (
+                    <Table.Tr key={p._id}>
+                      <Table.Td>{p.name}</Table.Td>
+                      <Table.Td>{p.unit}</Table.Td>
+                      <Table.Td>
+                        <NumberInput
+                          size="xs"
+                          value={(drafts[p._id] || {}).price || ''}
+                          onChange={(v) => setDraft(p._id, 'price', v ?? '')}
+                          min={0}
+                          decimalScale={2}
+                          w={120}
+                          placeholder="0.00"
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <Button size="xs" onClick={() => publish(p)}>
+                          Publish
+                        </Button>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Paper>
+          )}
+        </Tabs.Panel>
+
+        <Tabs.Panel value="products" pt="md">
+          <Paper withBorder p="md" radius="md" mb="md">
+            <form onSubmit={addProduct}>
+              <Stack gap="sm" maw={420}>
+                <Title order={3}>Add a product</Title>
+                <TextInput
+                  label="Name"
+                  placeholder="e.g. Onion"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
                 />
-              </td>
-              <td>
-                <button onClick={() => publish(p)}>Publish</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+                <Group grow gap="xs">
+                  <TextInput
+                    label="Unit"
+                    placeholder="kg, L, dozen"
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                  />
+                  <TextInput
+                    label="Category"
+                    placeholder="e.g. vegetables"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                  />
+                </Group>
+                <TextInput
+                  label="Image URL"
+                  placeholder="https://..."
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                />
+                <Button type="submit">Add product</Button>
+              </Stack>
+            </form>
+          </Paper>
+          {err && <Alert color="red" mb="sm">{err}</Alert>}
+          <Title order={3} mb="sm">Existing products</Title>
+          {products.length === 0 ? (
+            <Text c="dimmed">No products yet.</Text>
+          ) : (
+            <Paper withBorder radius="md">
+              <Table striped highlightOnHover>
+                <Table.Thead>
+                  <Table.Tr>
+                    <Table.Th>Name</Table.Th>
+                    <Table.Th>Unit</Table.Th>
+                    <Table.Th>Category</Table.Th>
+                    <Table.Th></Table.Th>
+                  </Table.Tr>
+                </Table.Thead>
+                <Table.Tbody>
+                  {products.map((p) => (
+                    <Table.Tr key={p._id}>
+                      <Table.Td>{p.name}</Table.Td>
+                      <Table.Td>{p.unit}</Table.Td>
+                      <Table.Td>{p.category || '—'}</Table.Td>
+                      <Table.Td>
+                        <Button
+                          size="xs"
+                          color="red"
+                          variant="light"
+                          onClick={() => removeProduct(p._id)}
+                        >
+                          Delete
+                        </Button>
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            </Paper>
+          )}
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
   )
 }

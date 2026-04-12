@@ -16,14 +16,14 @@ router.get('/:id', async (req, res) => {
   res.json({ product })
 })
 
-router.post('/', requireAuth, requireRole('admin'), async (req, res) => {
+router.post('/', requireAuth, requireRole('vendor'), async (req, res) => {
   const { name, unit, category, imageUrl } = req.body
   if (!name) return res.status(400).json({ error: 'name required' })
   const product = await Product.create({ name, unit, category, imageUrl })
   res.json({ product })
 })
 
-router.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
+router.put('/:id', requireAuth, requireRole('vendor'), async (req, res) => {
   const { name, unit, category, imageUrl } = req.body
   const product = await Product.findByIdAndUpdate(
     req.params.id,
@@ -34,7 +34,7 @@ router.put('/:id', requireAuth, requireRole('admin'), async (req, res) => {
   res.json({ product })
 })
 
-router.delete('/:id', requireAuth, requireRole('admin'), async (req, res) => {
+router.delete('/:id', requireAuth, requireRole('vendor'), async (req, res) => {
   await Product.findByIdAndDelete(req.params.id)
   res.json({ ok: true })
 })

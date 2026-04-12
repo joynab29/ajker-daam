@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Title, Select, Text, Group } from '@mantine/core'
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { api } from '../api.js'
@@ -8,9 +9,9 @@ function bucket(price, prices) {
   const sorted = [...prices].sort((a, b) => a - b)
   const lo = sorted[Math.floor(sorted.length / 3)]
   const hi = sorted[Math.floor((2 * sorted.length) / 3)]
-  if (price < lo) return '#2e8b57' // cheap = green
-  if (price > hi) return '#c0392b' // expensive = red
-  return '#f39c12' // mid = orange
+  if (price < lo) return '#2e8b57'
+  if (price > hi) return '#c0392b'
+  return '#f39c12'
 }
 
 export default function MapPage() {
@@ -38,14 +39,19 @@ export default function MapPage() {
 
   return (
     <div>
-      <h1>Map</h1>
-      <select value={productId} onChange={(e) => setProductId(e.target.value)}>
-        <option value="">— all products —</option>
-        {products.map((p) => (
-          <option key={p._id} value={p._id}>{p.name}</option>
-        ))}
-      </select>
-      <p>Markers: <span style={{ color: '#2e8b57' }}>● cheap</span> · <span style={{ color: '#f39c12' }}>● mid</span> · <span style={{ color: '#c0392b' }}>● expensive</span></p>
+      <Title order={1} mb="md">Map</Title>
+      <Select
+        value={productId}
+        onChange={(v) => setProductId(v || '')}
+        data={[{ value: '', label: '— all products —' }, ...products.map((p) => ({ value: p._id, label: p.name }))]}
+        maw={300}
+      />
+      <Group gap="xs" mt="xs">
+        <Text size="sm">Markers:</Text>
+        <Text size="sm" c="#2e8b57">● cheap</Text>
+        <Text size="sm" c="#f39c12">● mid</Text>
+        <Text size="sm" c="#c0392b">● expensive</Text>
+      </Group>
       <div style={{ height: 500, marginTop: 12 }}>
         <MapContainer center={center} zoom={11} style={{ height: '100%' }}>
           <TileLayer

@@ -1,12 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Title,
+  Select,
+  NumberInput,
+  TextInput,
+  FileInput,
+  Button,
+  Stack,
+  Group,
+  Alert,
+  Text,
+  Paper,
+  Loader,
+  Center,
+} from '@mantine/core'
 import { api, apiUpload } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 
 export default function Submit() {
   const { user } = useAuth()
   const nav = useNavigate()
-  const [products, setProducts] = useState([])
+  const [products, setProducts] = useState(null)
   const [productId, setProductId] = useState('')
   const [price, setPrice] = useState('')
   const [unit, setUnit] = useState('kg')
@@ -17,12 +32,18 @@ export default function Submit() {
   const [photo, setPhoto] = useState(null)
   const [err, setErr] = useState('')
   const [ok, setOk] = useState('')
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    api('/products').then((d) => {
-      setProducts(d.products)
-      if (d.products[0]) setProductId(d.products[0]._id)
-    })
+    api('/products')
+      .then((d) => {
+        setProducts(d.products)
+        if (d.products[0]) {
+          setProductId(d.products[0]._id)
+          setUnit(d.products[0].unit || 'kg')
+        }
+      })
+      .catch((e) => setErr(e.message))
   }, [])
 
   function getLocation() {
@@ -40,7 +61,8 @@ export default function Submit() {
     e.preventDefault()
     setErr('')
     setOk('')
-    if (!user) return setErr('login first')
+    if (!productId) return setErr('please pick a product')
+    setBusy(true)
     const fd = new FormData()
     fd.append('productId', productId)
     fd.append('price', price)
@@ -58,36 +80,135 @@ export default function Submit() {
       setTimeout(() => nav(`/products/${productId}`), 800)
     } catch (e) {
       setErr(e.message)
+    } finally {
+      setBusy(false)
     }
   }
 
-  if (!user) return <p>Please <a href="/login">login</a> first.</p>
+  if (!user) {
+    return (
+      <Alert color="blue">
+        Please <a href="/login">login</a> to submit a price.
+      </Alert>
+    )
+  }
+  if (user.role === 'admin') {
+    return (
+      <Alert color="yellow">
+        Admins cannot submit prices. Use a vendor or consumer account.
+      </Alert>
+    )
+  }
+
+  if (products === null) {
+    return (
+      <Center mih={200}>
+        <Loader />
+      </Center>
+    )
+  }
 
   return (
-    <div>
-      <h1>Submit a price</h1>
-      <form onSubmit={submit} style={{ display: 'grid', gap: 8, maxWidth: 400 }}>
-        <select value={productId} onChange={(e) => setProductId(e.target.value)} required>
-          {products.map((p) => (
-            <option key={p._id} value={p._id}>
-              {p.name} (per {p.unit})
-            </option>
-          ))}
-        </select>
-        <input type="number" step="0.01" placeholder="price" value={price} onChange={(e) => setPrice(e.target.value)} required />
-        <input placeholder="unit (kg, L, dozen)" value={unit} onChange={(e) => setUnit(e.target.value)} />
-        <input placeholder="area (e.g. Mirpur)" value={area} onChange={(e) => setArea(e.target.value)} />
-        <input placeholder="district (e.g. Dhaka)" value={district} onChange={(e) => setDistrict(e.target.value)} />
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input placeholder="lat" value={lat} onChange={(e) => setLat(e.target.value)} style={{ flex: 1 }} />
-          <input placeholder="lng" value={lng} onChange={(e) => setLng(e.target.value)} style={{ flex: 1 }} />
-          <button type="button" onClick={getLocation}>Use my location</button>
-        </div>
-        <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} />
-        <button type="submit">Submit price</button>
-      </form>
-      {err && <p style={{ color: 'red' }}>{err}</p>}
-      {ok && <p style={{ color: 'green' }}>{ok}</p>}
-    </div>
+    <Stack maw={520} gap="md">
+      <Title order={1}>Submit a price</Title>
+      <Text c="dimmed" size="sm">
+        Help others see what things actually cost in your area.
+      </Text>
+
+      {products.length === 0 ? (
+        <Alert color="yellow">
+          No products yet. Ask a vendor to add some before submitting prices.
+        </Alert>
+      ) : (
+        <Paper withBorder p="md" radius="md">
+          <form onSubmit={submit}>
+            <Stack gap="sm">
+              <Select
+                label="Product"
+                placeholder="Pick a product"
+                value={productId}
+                onChange={(v) => {
+                  setProductId(v || '')
+                  const p = products.find((x) => x._id === v)
+                  if (p?.unit) setUnit(p.unit)
+                }}
+                data={products.map((p) => ({
+                  value: p._id,
+                  label: `${p.name} (per ${p.unit})`,
+                }))}
+                required
+                allowDeselect={false}
+                searchable
+                nothingFoundMessage="No matches"
+              />
+              <Group grow gap="xs">
+                <NumberInput
+                  label="Price"
+                  placeholder="0.00"
+                  value={price}
+                  onChange={(v) => setPrice(v ?? '')}
+                  min={0}
+                  decimalScale={2}
+                  required
+                />
+                <TextInput
+                  label="Unit"
+                  placeholder="kg, L, dozen"
+                  value={unit}
+                  onChange={(e) => setUnit(e.target.value)}
+                />
+              </Group>
+              <Group grow gap="xs">
+                <TextInput
+                  label="Area"
+                  placeholder="e.g. Mirpur"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value)}
+                />
+                <TextInput
+                  label="District"
+                  placeholder="e.g. Dhaka"
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                />
+              </Group>
+              <Group align="end" gap="xs">
+                <TextInput
+                  label="Latitude"
+                  placeholder="optional"
+                  value={lat}
+                  onChange={(e) => setLat(e.target.value)}
+                  flex={1}
+                />
+                <TextInput
+                  label="Longitude"
+                  placeholder="optional"
+                  value={lng}
+                  onChange={(e) => setLng(e.target.value)}
+                  flex={1}
+                />
+                <Button type="button" variant="default" onClick={getLocation}>
+                  Use my location
+                </Button>
+              </Group>
+              <FileInput
+                label="Photo (optional)"
+                accept="image/*"
+                placeholder="Attach a receipt or shelf photo"
+                value={photo}
+                onChange={setPhoto}
+                clearable
+              />
+              <Button type="submit" loading={busy} mt="xs">
+                Submit price
+              </Button>
+            </Stack>
+          </form>
+        </Paper>
+      )}
+
+      {err && <Alert color="red">{err}</Alert>}
+      {ok && <Alert color="green">{ok}</Alert>}
+    </Stack>
   )
 }

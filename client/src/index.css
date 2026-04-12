@@ -15,21 +15,7 @@ body {
 }
 
 main {
-  max-width: 800px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 24px;
-}
-
-h1 {
-  color: var(--green);
-}
-
-button {
-  background: var(--lime);
-  color: var(--green);
-  border: none;
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-weight: bold;
-  cursor: pointer;
 }
