@@ -26,6 +26,7 @@ export default function Signup() {
   const [code, setCode] = useState('')
   const [err, setErr] = useState('')
   const [info, setInfo] = useState('')
+  const [previewUrl, setPreviewUrl] = useState('')
   const [busy, setBusy] = useState(false)
   const { login } = useAuth()
   const nav = useNavigate()
@@ -35,12 +36,13 @@ export default function Signup() {
     setErr('')
     setBusy(true)
     try {
-      await api('/auth/signup', {
+      const data = await api('/auth/signup', {
         method: 'POST',
         body: JSON.stringify({ name, email, password, role }),
       })
       setStage('verify')
       setInfo(`We sent a 6-digit code to ${email}.`)
+      setPreviewUrl(data.devPreviewUrl || '')
     } catch (e) {
       setErr(e.message)
     } finally {
@@ -70,11 +72,12 @@ export default function Signup() {
     setErr('')
     setInfo('')
     try {
-      await api('/auth/resend', {
+      const data = await api('/auth/resend', {
         method: 'POST',
         body: JSON.stringify({ email, purpose: 'signup' }),
       })
       setInfo('A new code was sent.')
+      setPreviewUrl(data.devPreviewUrl || '')
     } catch (e) {
       setErr(e.message)
     }
@@ -157,6 +160,14 @@ export default function Signup() {
         </Paper>
       )}
       {info && <Alert color="blue">{info}</Alert>}
+      {previewUrl && (
+        <Alert color="gray" title="Dev mode">
+          No SMTP configured — view the email at{' '}
+          <Anchor href={previewUrl} target="_blank" rel="noreferrer">
+            {previewUrl}
+          </Anchor>
+        </Alert>
+      )}
       {err && <Alert color="red">{err}</Alert>}
       <Text size="sm">
         Have an account? <Anchor component={Link} to="/login">Login</Anchor>

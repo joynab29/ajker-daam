@@ -37,7 +37,7 @@ async function createVerification({ email, purpose, payload }) {
   const expiresAt = new Date(Date.now() + CODE_TTL_MS)
   await Verification.deleteMany({ email, purpose })
   await Verification.create({ email, purpose, codeHash, payload, expiresAt })
-  await sendCodeEmail({ to: email, code, purpose })
+  return sendCodeEmail({ to: email, code, purpose })
 }
 
 router.post('/signup', async (req, res) => {
@@ -49,12 +49,12 @@ router.post('/signup', async (req, res) => {
   const exists = await User.findOne({ email: normalized })
   if (exists) return res.status(400).json({ error: 'email taken' })
   const passwordHash = await bcrypt.hash(password, 10)
-  await createVerification({
+  const mail = await createVerification({
     email: normalized,
     purpose: 'signup',
     payload: { name, passwordHash, role: role || 'consumer' },
   })
-  res.json({ pending: true, email: normalized })
+  res.json({ pending: true, email: normalized, devPreviewUrl: mail.previewUrl || null })
 })
 
 router.post('/signup/verify', async (req, res) => {
@@ -95,12 +95,12 @@ router.post('/login', async (req, res) => {
   if (!user) return res.status(400).json({ error: 'bad credentials' })
   const ok = await bcrypt.compare(password, user.passwordHash)
   if (!ok) return res.status(400).json({ error: 'bad credentials' })
-  await createVerification({
+  const mail = await createVerification({
     email: normalized,
     purpose: 'login',
     payload: { userId: user._id.toString() },
   })
-  res.json({ pending: true, email: normalized })
+  res.json({ pending: true, email: normalized, devPreviewUrl: mail.previewUrl || null })
 })
 
 router.post('/login/verify', async (req, res) => {
@@ -140,8 +140,8 @@ router.post('/resend', async (req, res) => {
   existing.attempts = 0
   existing.expiresAt = new Date(Date.now() + CODE_TTL_MS)
   await existing.save()
-  await sendCodeEmail({ to: normalized, code, purpose })
-  res.json({ ok: true })
+  const mail = await sendCodeEmail({ to: normalized, code, purpose })
+  res.json({ ok: true, devPreviewUrl: mail.previewUrl || null })
 })
 
 export default router

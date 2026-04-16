@@ -64,11 +64,12 @@ export async function sendCodeEmail({ to, code, purpose }) {
       text,
       html,
     })
+    let previewUrl = null
     if (mode === 'ethereal') {
-      const url = nodemailer.getTestMessageUrl(info)
-      console.log(`[mailer:ethereal] preview ${to}: ${url}`)
+      previewUrl = nodemailer.getTestMessageUrl(info) || null
+      console.log(`[mailer:ethereal] preview ${to}: ${previewUrl}`)
     }
-    return { ok: true, mode }
+    return { ok: true, mode, previewUrl }
   } catch (err) {
     console.error(`[mailer] send failed for ${to}: ${err.message}`)
     console.log(`[mailer:fallback] ${purpose} code for ${to}: ${code}`)
