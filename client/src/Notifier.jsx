@@ -34,7 +34,7 @@ export default function Notifier() {
   }
 
   return (
-    <Button size="xs" variant="outline" color="lime" onClick={ask}>
+    <Button size="xs" variant="outline" color="cyan" onClick={ask}>
       Enable alerts
     </Button>
   )

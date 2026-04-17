@@ -11,7 +11,7 @@ export default defineConfig({
         name: 'Ajker Daam',
         short_name: 'AjkerDaam',
         description: 'Crowd-sourced market price tracker',
-        theme_color: '#0e3d2f',
+        theme_color: '#1c3a8a',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',

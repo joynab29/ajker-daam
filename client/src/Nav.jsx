@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext.jsx'
 import Notifier from './Notifier.jsx'
 
 const linkStyle = { color: '#fff', fontWeight: 500 }
-const activeStyle = { color: 'var(--lime)', fontWeight: 600 }
+const activeStyle = { color: 'var(--sky)', fontWeight: 600 }
 
 function NavLink({ to, label }) {
   const { pathname } = useLocation()
@@ -24,7 +24,7 @@ export default function Nav() {
       px="md"
       py="sm"
       style={{
-        background: 'var(--green)',
+        background: 'var(--blue)',
         color: '#fff',
         boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
       }}
@@ -55,7 +55,7 @@ export default function Nav() {
               {user.role}
             </Badge>
           </Group>
-          <Button size="xs" color="lime" variant="filled" onClick={logout}>
+          <Button size="xs" color="cyan" variant="filled" onClick={logout}>
             Logout
           </Button>
         </>
@@ -71,6 +71,6 @@ export default function Nav() {
 
 function roleColor(role) {
   if (role === 'admin') return 'red'
-  if (role === 'vendor') return 'lime'
+  if (role === 'vendor') return 'cyan'
   return 'gray'
 }

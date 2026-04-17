@@ -104,7 +104,7 @@ export default function Admin() {
 
 function roleColor(role) {
   if (role === 'admin') return 'red'
-  if (role === 'vendor') return 'green'
+  if (role === 'vendor') return 'cyan'
   return 'blue'
 }
 

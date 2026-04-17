@@ -6,7 +6,7 @@ import { MantineProvider, createTheme } from '@mantine/core'
 import App from './App.jsx'
 
 const theme = createTheme({
-  primaryColor: 'green',
+  primaryColor: 'blue',
   fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, sans-serif',
   defaultRadius: 'md',
 })

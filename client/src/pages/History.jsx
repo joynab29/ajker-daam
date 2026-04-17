@@ -57,9 +57,9 @@ export default function History() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="avg" stroke="#0e3d2f" name="avg" />
-                <Line type="monotone" dataKey="min" stroke="#5c6b63" name="min" />
-                <Line type="monotone" dataKey="max" stroke="#c3e821" name="max" />
+                <Line type="monotone" dataKey="avg" stroke="#1c3a8a" name="avg" />
+                <Line type="monotone" dataKey="min" stroke="#5c6b8a" name="min" />
+                <Line type="monotone" dataKey="max" stroke="#38bdf8" name="max" />
               </LineChart>
             </ResponsiveContainer>
           </div>

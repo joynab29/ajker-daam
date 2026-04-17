@@ -43,7 +43,7 @@ export default function ProductDetail() {
                 <XAxis dataKey="time" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="price" stroke="#0e3d2f" />
+                <Line type="monotone" dataKey="price" stroke="#1c3a8a" />
               </LineChart>
             </ResponsiveContainer>
           </div>

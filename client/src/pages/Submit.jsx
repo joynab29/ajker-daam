@@ -208,7 +208,7 @@ export default function Submit() {
       )}
 
       {err && <Alert color="red">{err}</Alert>}
-      {ok && <Alert color="green">{ok}</Alert>}
+      {ok && <Alert color="teal">{ok}</Alert>}
     </Stack>
   )
 }

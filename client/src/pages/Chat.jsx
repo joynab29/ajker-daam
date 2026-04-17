@@ -38,7 +38,7 @@ export default function Chat() {
         <Stack gap={4}>
           {messages.map((m) => (
             <Text key={m.id} size="sm">
-              <Text span fw={600} c="green.9">{m.name}</Text>{' '}
+              <Text span fw={600} c="blue.9">{m.name}</Text>{' '}
               <Text span size="xs" c="dimmed">({m.role})</Text>: {m.text}
             </Text>
           ))}
