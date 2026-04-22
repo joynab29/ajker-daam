@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 
 const listingSchema = new mongoose.Schema({
-  vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  farmerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   title: { type: String, required: true },
   description: { type: String, default: '' },
   price: { type: Number, required: true },

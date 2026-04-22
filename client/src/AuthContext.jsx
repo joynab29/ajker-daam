@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react'
-import { api, getUser, setUser as saveUser, setToken, getToken } from './api.js'
+import { createContext, useContext, useState } from 'react'
+import { getUser, setUser as saveUser, setToken } from './api.js'
 
 const AuthContext = createContext(null)
 
@@ -17,22 +17,6 @@ export function AuthProvider({ children }) {
     saveUser(null)
     setUserState(null)
   }
-
-  useEffect(() => {
-    if (!getToken()) return
-    api('/me')
-      .then((d) => {
-        if (d.user) {
-          saveUser(d.user)
-          setUserState(d.user)
-        }
-      })
-      .catch(() => {
-        setToken(null)
-        saveUser(null)
-        setUserState(null)
-      })
-  }, [])
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

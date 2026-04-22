@@ -19,21 +19,12 @@ export function setUser(u) {
   else localStorage.removeItem('user')
 }
 
-function clearSessionAndReload() {
-  localStorage.removeItem('token')
-  localStorage.removeItem('user')
-  if (location.pathname !== '/login') location.href = '/login'
-}
-
 export async function api(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) }
   const token = getToken()
   if (token) headers.Authorization = `Bearer ${token}`
   const res = await fetch(BASE + path, { ...options, headers })
   const data = await res.json().catch(() => ({}))
-  if (res.status === 401 && token) {
-    clearSessionAndReload()
-  }
   if (!res.ok) throw new Error(data.error || 'request failed')
   return data
 }
@@ -44,9 +35,6 @@ export async function apiUpload(path, formData) {
   if (token) headers.Authorization = `Bearer ${token}`
   const res = await fetch(BASE + path, { method: 'POST', headers, body: formData })
   const data = await res.json().catch(() => ({}))
-  if (res.status === 401 && token) {
-    clearSessionAndReload()
-  }
   if (!res.ok) throw new Error(data.error || 'request failed')
   return data
 }

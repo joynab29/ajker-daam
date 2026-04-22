@@ -6,7 +6,6 @@ import http from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { Server as SocketServer } from 'socket.io'
 import { connectDb } from './db.js'
-import { User } from './models/User.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import priceRoutes from './routes/prices.js'
@@ -61,12 +60,8 @@ app.use('/api/admin', adminRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/listings', listingRoutes)
 
-app.get('/api/me', requireAuth, async (req, res) => {
-  const user = await User.findById(req.user.id).select('name email role')
-  if (!user || user.role !== req.user.role) {
-    return res.status(401).json({ error: 'session invalid' })
-  }
-  res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role } })
+app.get('/api/me', requireAuth, (req, res) => {
+  res.json({ user: req.user })
 })
 
 

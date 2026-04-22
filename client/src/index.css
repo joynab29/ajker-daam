@@ -1,7 +1,7 @@
 :root {
-  --blue: #1c3a8a;
-  --sky: #38bdf8;
-  --ink: #0a1f3d;
+  --green: #0e3d2f;
+  --lime: #c3e821;
+  --ink: #0e2a1f;
   --muted: #5c6b63;
   --bg: #ffffff;
 
@@ -15,7 +15,21 @@ body {
 }
 
 main {
-  max-width: 1100px;
+  max-width: 800px;
   margin: 0 auto;
   padding: 24px;
+}
+
+h1 {
+  color: var(--green);
+}
+
+button {
+  background: var(--lime);
+  color: var(--green);
+  border: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: bold;
+  cursor: pointer;
 }

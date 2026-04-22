@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Title, Text, Alert, Stack, Paper, Group } from '@mantine/core'
 import { api } from '../api.js'
 import { socket } from '../socket.js'
 
@@ -25,39 +24,37 @@ export default function Dashboard() {
 
   return (
     <div>
-      <Title order={1} mb="xs">Live price feed</Title>
-      <Text mb="md">New submissions appear here in real time.</Text>
+      <h1>Live price feed</h1>
+      <p>New submissions appear here in real time.</p>
 
       {alerts.length > 0 && (
-        <Alert color="yellow" title="Price spike alerts" mb="md">
-          <Stack gap={2}>
+        <div style={{ background: '#fff4d6', border: '1px solid #e6c200', padding: 12, borderRadius: 8, marginBottom: 12 }}>
+          <strong>Price spike alerts</strong>
+          <ul style={{ margin: '4px 0 0 0', padding: 0, listStyle: 'none' }}>
             {alerts.map((a, i) => (
-              <Text key={i} size="sm">
+              <li key={i}>
                 {a.priceReport.productId?.name}: {a.priceReport.price} (
                 {a.direction === 'up' ? '+' : ''}
                 {(a.change * 100).toFixed(0)}% vs 7-day avg {a.avg.toFixed(2)})
-              </Text>
+              </li>
             ))}
-          </Stack>
-        </Alert>
+          </ul>
+        </div>
       )}
 
       {prices.length === 0 ? (
-        <Text>No reports yet.</Text>
+        <p>No reports yet.</p>
       ) : (
-        <Stack gap={0}>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
           {prices.map((p) => (
-            <Paper key={p._id} py="xs" withBorder={false} style={{ borderBottom: '1px solid #eee' }}>
-              <Group gap="xs" wrap="wrap">
-                <Text fw={600}>{p.productId?.name}</Text>
-                <Text>— {p.price} / {p.unit} —</Text>
-                <Text>{[p.area, p.district].filter(Boolean).join(', ') || 'unknown'}</Text>
-                <Text>— {p.userId?.name} ({p.source}) —</Text>
-                <Text size="xs" c="dimmed">{new Date(p.createdAt).toLocaleTimeString()}</Text>
-              </Group>
-            </Paper>
+            <li key={p._id} style={{ borderBottom: '1px solid #eee', padding: '6px 0' }}>
+              <strong>{p.productId?.name}</strong> — {p.price} / {p.unit} —{' '}
+              {[p.area, p.district].filter(Boolean).join(', ') || 'unknown'} —{' '}
+              {p.userId?.name} ({p.source}) —{' '}
+              <small>{new Date(p.createdAt).toLocaleTimeString()}</small>
+            </li>
           ))}
-        </Stack>
+        </ul>
       )}
     </div>
   )
