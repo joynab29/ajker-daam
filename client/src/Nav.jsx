@@ -14,6 +14,7 @@ export default function Nav() {
       <Link to="/leaderboard" style={{ color: '#fff' }}>Leaderboard</Link>
       <Link to="/marketplace" style={{ color: '#fff' }}>Marketplace</Link>
       <Link to="/chat" style={{ color: '#fff' }}>Chat</Link>
+      <Link to="/map" style={{ color: '#fff' }}>Map</Link>
       {user && <Link to="/submit" style={{ color: '#fff' }}>Submit</Link>}
       {user && user.role === 'vendor' && <Link to="/vendor" style={{ color: '#fff' }}>Vendor</Link>}
       {user && user.role === 'admin' && <Link to="/admin" style={{ color: '#fff' }}>Admin</Link>}

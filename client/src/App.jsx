@@ -17,6 +17,7 @@ import Anomalies from './pages/Anomalies.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
 import Marketplace from './pages/Marketplace.jsx'
 import Chat from './pages/Chat.jsx'
+import MapPage from './pages/Map.jsx'
 import './App.css'
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/map" element={<MapPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/products/:id" element={<ProductDetail />} />
