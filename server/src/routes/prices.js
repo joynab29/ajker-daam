@@ -1,10 +1,12 @@
 import { Router } from 'express'
 import mongoose from 'mongoose'
 import { PriceReport } from '../models/PriceReport.js'
+import { Product } from '../models/Product.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireRole } from '../middleware/role.js'
 import { upload } from '../middleware/upload.js'
 import { emit } from '../realtime.js'
+import { notifyPriceSpike } from '../services/notify.js'
 
 const router = Router()
 
@@ -56,6 +58,54 @@ router.get('/history', async (req, res) => {
   res.json({
     history: rows.map((r) => ({
       date: r._id,
+      avg: r.avg,
+      min: r.min,
+      max: r.max,
+      count: r.count,
+    })),
+  })
+})
+
+router.get('/by-location', async (req, res) => {
+  const { product, productId } = req.query
+  let pid = productId
+  if (!pid && product) {
+    const found = await Product.findOne({ name: new RegExp(`^${product}$`, 'i') }).select('_id')
+    if (!found) return res.json({ product, points: [] })
+    pid = found._id
+  }
+  if (!pid) return res.status(400).json({ error: 'product or productId required' })
+
+  const rows = await PriceReport.aggregate([
+    {
+      $match: {
+        productId: new mongoose.Types.ObjectId(pid),
+        lat: { $ne: null },
+        lng: { $ne: null },
+      },
+    },
+    {
+      $group: {
+        _id: { district: '$district', area: '$area' },
+        avg: { $avg: '$price' },
+        min: { $min: '$price' },
+        max: { $max: '$price' },
+        count: { $sum: 1 },
+        lat: { $avg: '$lat' },
+        lng: { $avg: '$lng' },
+      },
+    },
+    { $sort: { avg: 1 } },
+  ])
+
+  res.json({
+    product,
+    productId: pid,
+    points: rows.map((r) => ({
+      district: r._id.district,
+      area: r._id.area,
+      lat: r.lat,
+      lng: r.lng,
       avg: r.avg,
       min: r.min,
       max: r.max,
@@ -118,7 +168,7 @@ router.get('/', async (req, res) => {
 
 const SPIKE_THRESHOLD = 0.2 // 20%
 
-router.post('/', requireAuth, upload.single('photo'), async (req, res) => {
+router.post('/', requireAuth, requireRole('consumer', 'vendor'), upload.single('photo'), async (req, res) => {
   const { productId, price, unit, lat, lng, area, district } = req.body
   if (!productId || !price) {
     return res.status(400).json({ error: 'productId and price required' })
@@ -166,6 +216,7 @@ router.post('/', requireAuth, upload.single('photo'), async (req, res) => {
   emit('price:new', populated)
   if (spike) {
     emit('price:spike', { priceReport: populated, ...spike })
+    notifyPriceSpike(populated, spike).catch((e) => console.error('notify spike:', e.message))
   }
   res.json({ priceReport: populated, spike })
 })

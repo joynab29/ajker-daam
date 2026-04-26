@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Title, Select, Table, Text } from '@mantine/core'
 import { api } from '../api.js'
 
 export default function Compare() {
@@ -20,39 +21,41 @@ export default function Compare() {
 
   return (
     <div>
-      <h1>Compare prices by area</h1>
-      <select value={productId} onChange={(e) => setProductId(e.target.value)}>
-        {products.map((p) => (
-          <option key={p._id} value={p._id}>{p.name}</option>
-        ))}
-      </select>
+      <Title order={1} mb="md">Compare prices by area</Title>
+      <Select
+        value={productId}
+        onChange={(v) => setProductId(v || '')}
+        data={products.map((p) => ({ value: p._id, label: p.name }))}
+        allowDeselect={false}
+        maw={300}
+      />
       {rows.length === 0 ? (
-        <p>No data for this product.</p>
+        <Text mt="sm">No data for this product.</Text>
       ) : (
-        <table style={{ borderCollapse: 'collapse', width: '100%', marginTop: 12 }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Area</th>
-              <th style={{ textAlign: 'left' }}>District</th>
-              <th style={{ textAlign: 'right' }}>Avg</th>
-              <th style={{ textAlign: 'right' }}>Min</th>
-              <th style={{ textAlign: 'right' }}>Max</th>
-              <th style={{ textAlign: 'right' }}>Reports</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table mt="md" striped withTableBorder>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Area</Table.Th>
+              <Table.Th>District</Table.Th>
+              <Table.Th ta="right">Avg</Table.Th>
+              <Table.Th ta="right">Min</Table.Th>
+              <Table.Th ta="right">Max</Table.Th>
+              <Table.Th ta="right">Reports</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
             {rows.map((r, i) => (
-              <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                <td>{r.area || '—'}</td>
-                <td>{r.district || '—'}</td>
-                <td style={{ textAlign: 'right' }}>{r.avg.toFixed(2)}</td>
-                <td style={{ textAlign: 'right' }}>{r.min}</td>
-                <td style={{ textAlign: 'right' }}>{r.max}</td>
-                <td style={{ textAlign: 'right' }}>{r.count}</td>
-              </tr>
+              <Table.Tr key={i}>
+                <Table.Td>{r.area || '—'}</Table.Td>
+                <Table.Td>{r.district || '—'}</Table.Td>
+                <Table.Td ta="right">{r.avg.toFixed(2)}</Table.Td>
+                <Table.Td ta="right">{r.min}</Table.Td>
+                <Table.Td ta="right">{r.max}</Table.Td>
+                <Table.Td ta="right">{r.count}</Table.Td>
+              </Table.Tr>
             ))}
-          </tbody>
-        </table>
+          </Table.Tbody>
+        </Table>
       )}
     </div>
   )

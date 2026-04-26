@@ -1,17 +1,23 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
+import jwt from 'jsonwebtoken'
 import path from 'node:path'
 import http from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { Server as SocketServer } from 'socket.io'
 import { connectDb } from './db.js'
+import { User } from './models/User.js'
+import { Message } from './models/Message.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import priceRoutes from './routes/prices.js'
 import adminRoutes from './routes/admin.js'
 import userRoutes from './routes/users.js'
 import listingRoutes from './routes/listings.js'
+import orderRoutes from './routes/orders.js'
+import chatRoutes from './routes/chat.js'
+import notificationRoutes from './routes/notifications.js'
 import { requireAuth } from './middleware/auth.js'
 import { requireRole } from './middleware/role.js'
 import { setIo } from './realtime.js'
@@ -27,8 +33,23 @@ setIo(io)
 
 const chatHistory = []
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token
+  if (!token) return next()
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET)
+    socket.data.userId = payload.id
+    socket.data.role = payload.role
+  } catch {}
+  next()
+})
+
 io.on('connection', (socket) => {
   console.log('socket connected', socket.id)
+  if (socket.data.userId) {
+    socket.join(`user:${socket.data.userId}`)
+  }
+
   socket.emit('chat:history', chatHistory)
   socket.on('chat:send', (msg) => {
     if (!msg || !msg.text || !msg.name) return
@@ -42,6 +63,46 @@ io.on('connection', (socket) => {
     chatHistory.push(entry)
     while (chatHistory.length > 50) chatHistory.shift()
     io.emit('chat:msg', entry)
+  })
+
+  socket.on('chat:dm:send', async (payload, ack) => {
+    try {
+      const senderId = socket.data.userId
+      if (!senderId) return ack?.({ error: 'unauthenticated' })
+      const { to, text } = payload || {}
+      if (!to || !text || !String(text).trim()) {
+        return ack?.({ error: 'invalid' })
+      }
+      const saved = await Message.create({
+        senderId,
+        receiverId: to,
+        message: String(text).slice(0, 1000),
+        isRead: false,
+      })
+      const out = {
+        _id: saved._id,
+        senderId: saved.senderId,
+        receiverId: saved.receiverId,
+        message: saved.message,
+        isRead: saved.isRead,
+        createdAt: saved.createdAt,
+      }
+      io.to(`user:${to}`).emit('chat:dm:msg', out)
+      io.to(`user:${senderId}`).emit('chat:dm:msg', out)
+      ack?.({ ok: true, message: out })
+    } catch (e) {
+      ack?.({ error: e.message })
+    }
+  })
+
+  socket.on('chat:dm:read', async ({ from } = {}) => {
+    const me = socket.data.userId
+    if (!me || !from) return
+    await Message.updateMany(
+      { senderId: from, receiverId: me, isRead: false },
+      { $set: { isRead: true } },
+    )
+    io.to(`user:${from}`).emit('chat:dm:read', { by: me })
   })
 })
 
@@ -59,9 +120,17 @@ app.use('/api/prices', priceRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/listings', listingRoutes)
+app.use('/api/marketplace/products', listingRoutes)
+app.use('/api/marketplace/orders', orderRoutes)
+app.use('/api/chat', chatRoutes)
+app.use('/api/notifications', notificationRoutes)
 
-app.get('/api/me', requireAuth, (req, res) => {
-  res.json({ user: req.user })
+app.get('/api/me', requireAuth, async (req, res) => {
+  const user = await User.findById(req.user.id).select('name email role')
+  if (!user || user.role !== req.user.role) {
+    return res.status(401).json({ error: 'session invalid' })
+  }
+  res.json({ user: { id: user._id, name: user.name, email: user.email, role: user.role } })
 })
 
 

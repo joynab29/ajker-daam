@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react'
+import {
+  Title,
+  Tabs,
+  Stack,
+  SimpleGrid,
+  Paper,
+  Text,
+  Table,
+  Alert,
+  Button,
+  Badge,
+} from '@mantine/core'
 import { api } from '../api.js'
 
 export default function Admin() {
   const [tab, setTab] = useState('overview')
   const [stats, setStats] = useState(null)
   const [users, setUsers] = useState([])
-  const [products, setProducts] = useState([])
-  const [name, setName] = useState('')
-  const [unit, setUnit] = useState('kg')
-  const [category, setCategory] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
   const [err, setErr] = useState('')
 
-  function loadProducts() {
-    api('/products').then((d) => setProducts(d.products)).catch((e) => setErr(e.message))
-  }
   function loadStats() {
     api('/admin/stats').then(setStats).catch((e) => setErr(e.message))
   }
@@ -23,114 +27,92 @@ export default function Admin() {
   }
 
   useEffect(() => {
-    loadProducts()
     loadStats()
     loadUsers()
   }, [])
 
-  async function add(e) {
-    e.preventDefault()
-    setErr('')
+  async function removeUser(id) {
+    if (!confirm('Delete this user?')) return
     try {
-      await api('/products', {
-        method: 'POST',
-        body: JSON.stringify({ name, unit, category, imageUrl }),
-      })
-      setName('')
-      setCategory('')
-      setImageUrl('')
-      loadProducts()
+      await api(`/admin/users/${id}`, { method: 'DELETE' })
+      loadUsers()
     } catch (e) {
       setErr(e.message)
     }
   }
 
-  async function removeProduct(id) {
-    if (!confirm('Delete this product?')) return
-    await api(`/products/${id}`, { method: 'DELETE' })
-    loadProducts()
-  }
-
-  async function removeUser(id) {
-    if (!confirm('Delete this user?')) return
-    await api(`/admin/users/${id}`, { method: 'DELETE' })
-    loadUsers()
-  }
-
   return (
-    <div>
-      <h1>Admin</h1>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <button onClick={() => setTab('overview')} disabled={tab === 'overview'}>Overview</button>
-        <button onClick={() => setTab('products')} disabled={tab === 'products'}>Products</button>
-        <button onClick={() => setTab('users')} disabled={tab === 'users'}>Users</button>
-      </div>
-      {err && <p style={{ color: 'red' }}>{err}</p>}
+    <Stack gap="md">
+      <Title order={1}>Admin</Title>
+      {err && <Alert color="red">{err}</Alert>}
+      <Tabs value={tab} onChange={setTab}>
+        <Tabs.List>
+          <Tabs.Tab value="overview">Overview</Tabs.Tab>
+          <Tabs.Tab value="users">Users</Tabs.Tab>
+        </Tabs.List>
 
-      {tab === 'overview' && stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
-          <Card label="Users" value={stats.users} />
-          <Card label="Products" value={stats.products} />
-          <Card label="Reports" value={stats.prices} />
-          <Card label="Anomalies" value={stats.anomalies} />
-          <Card label="Flagged" value={stats.flagged} />
-        </div>
-      )}
+        <Tabs.Panel value="overview" pt="md">
+          {stats && (
+            <SimpleGrid cols={{ base: 2, sm: 3, md: 5 }} spacing="md">
+              <StatCard label="Users" value={stats.users} />
+              <StatCard label="Products" value={stats.products} />
+              <StatCard label="Reports" value={stats.prices} />
+              <StatCard label="Anomalies" value={stats.anomalies} />
+              <StatCard label="Flagged" value={stats.flagged} />
+            </SimpleGrid>
+          )}
+        </Tabs.Panel>
 
-      {tab === 'products' && (
-        <>
-          <form onSubmit={add} style={{ display: 'grid', gap: 8, maxWidth: 400 }}>
-            <input placeholder="name" value={name} onChange={(e) => setName(e.target.value)} required />
-            <input placeholder="unit (e.g. kg, L, dozen)" value={unit} onChange={(e) => setUnit(e.target.value)} />
-            <input placeholder="category" value={category} onChange={(e) => setCategory(e.target.value)} />
-            <input placeholder="image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
-            <button type="submit">Add product</button>
-          </form>
-          <h2>Existing</h2>
-          <ul>
-            {products.map((p) => (
-              <li key={p._id}>
-                {p.name} (per {p.unit}) {p.category && `— ${p.category}`}{' '}
-                <button onClick={() => removeProduct(p._id)}>Delete</button>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-
-      {tab === 'users' && (
-        <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left' }}>Name</th>
-              <th style={{ textAlign: 'left' }}>Email</th>
-              <th style={{ textAlign: 'left' }}>Role</th>
-              <th style={{ textAlign: 'left' }}>Joined</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((u) => (
-              <tr key={u._id} style={{ borderBottom: '1px solid #eee' }}>
-                <td>{u.name}</td>
-                <td>{u.email}</td>
-                <td>{u.role}</td>
-                <td>{new Date(u.createdAt).toLocaleDateString()}</td>
-                <td><button onClick={() => removeUser(u._id)}>Delete</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+        <Tabs.Panel value="users" pt="md">
+          <Paper withBorder radius="md">
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Name</Table.Th>
+                  <Table.Th>Email</Table.Th>
+                  <Table.Th>Role</Table.Th>
+                  <Table.Th>Joined</Table.Th>
+                  <Table.Th></Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {users.map((u) => (
+                  <Table.Tr key={u._id}>
+                    <Table.Td>{u.name}</Table.Td>
+                    <Table.Td>{u.email}</Table.Td>
+                    <Table.Td>
+                      <Badge variant="light" color={roleColor(u.role)}>
+                        {u.role}
+                      </Badge>
+                    </Table.Td>
+                    <Table.Td>{new Date(u.createdAt).toLocaleDateString()}</Table.Td>
+                    <Table.Td>
+                      <Button size="xs" color="red" variant="light" onClick={() => removeUser(u._id)}>
+                        Delete
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Paper>
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
   )
 }
 
-function Card({ label, value }) {
+function roleColor(role) {
+  if (role === 'admin') return 'red'
+  if (role === 'vendor') return 'cyan'
+  return 'blue'
+}
+
+function StatCard({ label, value }) {
   return (
-    <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
-      <div style={{ fontSize: 12, color: '#666' }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 'bold', color: 'var(--green)' }}>{value}</div>
-    </div>
+    <Paper withBorder p="md" radius="md">
+      <Text size="xs" c="dimmed">{label}</Text>
+      <Text size="xl" fw={700}>{value}</Text>
+    </Paper>
   )
 }

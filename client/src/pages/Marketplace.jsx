@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Title, TextInput, Textarea, NumberInput, FileInput, Button, Stack, Group, SimpleGrid, Card, Image, Text, Alert, Paper, Modal } from '@mantine/core'
 import { api, apiUpload } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 
@@ -17,6 +18,13 @@ export default function Marketplace() {
   const [contact, setContact] = useState('')
   const [photo, setPhoto] = useState(null)
   const [err, setErr] = useState('')
+
+  const [orderTarget, setOrderTarget] = useState(null)
+  const [orderQty, setOrderQty] = useState(1)
+  const [orderContact, setOrderContact] = useState('')
+  const [orderMessage, setOrderMessage] = useState('')
+  const [orderErr, setOrderErr] = useState('')
+  const [orderOk, setOrderOk] = useState('')
 
   function load() {
     api('/listings').then((d) => setListings(d.listings))
@@ -59,53 +67,122 @@ export default function Marketplace() {
     load()
   }
 
+  function openOrder(listing) {
+    setOrderTarget(listing)
+    setOrderQty(1)
+    setOrderContact('')
+    setOrderMessage('')
+    setOrderErr('')
+    setOrderOk('')
+  }
+
+  async function placeOrder(e) {
+    e.preventDefault()
+    setOrderErr('')
+    setOrderOk('')
+    try {
+      await api('/marketplace/orders', {
+        method: 'POST',
+        body: JSON.stringify({
+          listingId: orderTarget._id,
+          quantity: Number(orderQty),
+          contact: orderContact,
+          message: orderMessage,
+        }),
+      })
+      setOrderOk('Order placed. The vendor will contact you.')
+      setTimeout(() => setOrderTarget(null), 1200)
+    } catch (e) {
+      setOrderErr(e.message)
+    }
+  }
+
   return (
     <div>
-      <h1>Farmer Marketplace</h1>
+      <Title order={1} mb="md">Marketplace</Title>
 
-      {user?.role === 'farmer' && (
-        <>
-          <h2>Post a listing</h2>
-          <form onSubmit={add} style={{ display: 'grid', gap: 8, maxWidth: 500 }}>
-            <input placeholder="title" value={title} onChange={(e) => setTitle(e.target.value)} required />
-            <textarea placeholder="description" value={description} onChange={(e) => setDescription(e.target.value)} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input type="number" step="0.01" placeholder="price" value={price} onChange={(e) => setPrice(e.target.value)} required style={{ flex: 1 }} />
-              <input placeholder="unit" value={unit} onChange={(e) => setUnit(e.target.value)} style={{ width: 100 }} />
-              <input type="number" placeholder="qty available" value={quantityAvailable} onChange={(e) => setQty(e.target.value)} style={{ flex: 1 }} />
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input placeholder="area" value={area} onChange={(e) => setArea(e.target.value)} style={{ flex: 1 }} />
-              <input placeholder="district" value={district} onChange={(e) => setDistrict(e.target.value)} style={{ flex: 1 }} />
-            </div>
-            <input placeholder="contact (phone/email)" value={contact} onChange={(e) => setContact(e.target.value)} />
-            <input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0])} />
-            <button type="submit">Post listing</button>
+      {user?.role === 'vendor' && (
+        <Paper withBorder p="md" radius="md" mb="lg">
+          <Title order={3} mb="sm">Post a listing</Title>
+          <form onSubmit={add}>
+            <Stack gap="sm" maw={520}>
+              <TextInput label="Title" placeholder="e.g. Fresh tomatoes" value={title} onChange={(e) => setTitle(e.target.value)} required />
+              <Textarea label="Description" placeholder="optional details" value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Group gap="xs" grow>
+                <NumberInput label="Price" placeholder="0.00" value={price} onChange={(v) => setPrice(v ?? '')} min={0} decimalScale={2} required />
+                <TextInput label="Unit" placeholder="kg, L, dozen" value={unit} onChange={(e) => setUnit(e.target.value)} />
+                <NumberInput label="Qty available" placeholder="0" value={quantityAvailable} onChange={(v) => setQty(v ?? '')} min={0} />
+              </Group>
+              <Group gap="xs" grow>
+                <TextInput label="Area" placeholder="e.g. Mirpur" value={area} onChange={(e) => setArea(e.target.value)} />
+                <TextInput label="District" placeholder="e.g. Dhaka" value={district} onChange={(e) => setDistrict(e.target.value)} />
+              </Group>
+              <TextInput label="Contact" placeholder="phone or email" value={contact} onChange={(e) => setContact(e.target.value)} />
+              <FileInput label="Photo" accept="image/*" placeholder="optional" value={photo} onChange={setPhoto} clearable />
+              <Button type="submit">Post listing</Button>
+            </Stack>
           </form>
-          {err && <p style={{ color: 'red' }}>{err}</p>}
-        </>
+          {err && <Alert color="red" mt="sm">{err}</Alert>}
+        </Paper>
       )}
 
-      <h2>All listings</h2>
+      <Title order={2} mt="lg" mb="sm">All listings</Title>
       {listings.length === 0 ? (
-        <p>No listings yet.</p>
+        <Text>No listings yet.</Text>
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
           {listings.map((l) => (
-            <li key={l._id} style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
-              {l.imageUrl && <img src={SERVER + l.imageUrl} alt={l.title} style={{ width: '100%', height: 140, objectFit: 'cover' }} />}
-              <h3>{l.title}</h3>
-              <p>{l.price} / {l.unit} {l.quantityAvailable ? `(${l.quantityAvailable} avail)` : ''}</p>
-              {l.description && <p>{l.description}</p>}
-              <p><small>{[l.area, l.district].filter(Boolean).join(', ')}</small></p>
-              <p><small>By {l.farmerId?.name}{l.contact && ` — ${l.contact}`}</small></p>
-              {(user?.id === l.farmerId?._id || user?.role === 'admin') && (
-                <button onClick={() => remove(l._id)}>Delete</button>
+            <Card key={l._id} withBorder padding="sm" radius="md">
+              {l.imageUrl && (
+                <Card.Section>
+                  <Image src={SERVER + l.imageUrl} alt={l.title} h={140} fit="cover" />
+                </Card.Section>
               )}
-            </li>
+              <Title order={3} mt="xs">{l.title}</Title>
+              <Text>{l.price} / {l.unit} {l.quantityAvailable ? `(${l.quantityAvailable} avail)` : ''}</Text>
+              {l.description && <Text size="sm">{l.description}</Text>}
+              <Text size="xs" c="dimmed">{[l.area, l.district].filter(Boolean).join(', ')}</Text>
+              <Text size="xs" c="dimmed">By {l.vendorId?.name}{l.contact && ` — ${l.contact}`}</Text>
+              <Group gap="xs" mt="xs">
+                {l.contact && (
+                  <Button size="xs" variant="light" component="a" href={`tel:${l.contact}`}>
+                    Contact
+                  </Button>
+                )}
+                {user && user.id !== l.vendorId?._id && user.role !== 'admin' && (
+                  <Button size="xs" onClick={() => openOrder(l)}>Order</Button>
+                )}
+                {user && l.vendorId?._id && user.id !== l.vendorId._id && (
+                  <Button size="xs" variant="light" component="a" href={`/messages?to=${l.vendorId._id}`}>
+                    Message
+                  </Button>
+                )}
+                {(user?.id === l.vendorId?._id || user?.role === 'admin') && (
+                  <Button size="xs" color="red" onClick={() => remove(l._id)}>Delete</Button>
+                )}
+              </Group>
+            </Card>
           ))}
-        </ul>
+        </SimpleGrid>
       )}
+
+      <Modal opened={!!orderTarget} onClose={() => setOrderTarget(null)} title={orderTarget ? `Order: ${orderTarget.title}` : ''}>
+        {orderTarget && (
+          <form onSubmit={placeOrder}>
+            <Stack gap="sm">
+              <Text size="sm">
+                {orderTarget.price} / {orderTarget.unit} from {orderTarget.vendorId?.name}
+              </Text>
+              <NumberInput label="Quantity" value={orderQty} onChange={(v) => setOrderQty(v ?? 1)} min={1} required />
+              <TextInput label="Your contact" placeholder="phone or email" value={orderContact} onChange={(e) => setOrderContact(e.target.value)} required />
+              <Textarea label="Message" placeholder="optional note for the vendor" value={orderMessage} onChange={(e) => setOrderMessage(e.target.value)} />
+              <Button type="submit">Place order</Button>
+              {orderErr && <Alert color="red">{orderErr}</Alert>}
+              {orderOk && <Alert color="green">{orderOk}</Alert>}
+            </Stack>
+          </form>
+        )}
+      </Modal>
     </div>
   )
 }
