@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Title, TextInput, Textarea, NumberInput, FileInput, Button, Stack, Group, SimpleGrid, Card, Image, Text, Alert, Paper, Modal } from '@mantine/core'
+import { Link } from 'react-router-dom'
+import { Title, TextInput, Textarea, NumberInput, FileInput, Button, Stack, Group, SimpleGrid, Card, Image, Text, Alert, Paper, Modal, Badge } from '@mantine/core'
 import { api, apiUpload } from '../api.js'
 import { useAuth } from '../AuthContext.jsx'
 
@@ -10,11 +11,14 @@ export default function Marketplace() {
   const [listings, setListings] = useState([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
   const [price, setPrice] = useState('')
   const [unit, setUnit] = useState('kg')
   const [quantityAvailable, setQty] = useState('')
   const [area, setArea] = useState('')
   const [district, setDistrict] = useState('')
+  const [lat, setLat] = useState('')
+  const [lng, setLng] = useState('')
   const [contact, setContact] = useState('')
   const [photo, setPhoto] = useState(null)
   const [err, setErr] = useState('')
@@ -34,25 +38,42 @@ export default function Marketplace() {
     load()
   }, [])
 
+  function getLocation() {
+    if (!navigator.geolocation) return setErr('geolocation not supported')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLat(String(pos.coords.latitude))
+        setLng(String(pos.coords.longitude))
+      },
+      () => setErr('could not get location'),
+    )
+  }
+
   async function add(e) {
     e.preventDefault()
     setErr('')
     const fd = new FormData()
     fd.append('title', title)
     fd.append('description', description)
+    fd.append('category', category)
     fd.append('price', price)
     fd.append('unit', unit)
     fd.append('quantityAvailable', quantityAvailable)
     fd.append('area', area)
     fd.append('district', district)
+    if (lat) fd.append('lat', lat)
+    if (lng) fd.append('lng', lng)
     fd.append('contact', contact)
     if (photo) fd.append('photo', photo)
     try {
       await apiUpload('/listings', fd)
       setTitle('')
       setDescription('')
+      setCategory('')
       setPrice('')
       setQty('')
+      setLat('')
+      setLng('')
       setContact('')
       setPhoto(null)
       load()
@@ -100,16 +121,22 @@ export default function Marketplace() {
   return (
     <div>
       <Title order={1} mb="md">Marketplace</Title>
+      <Text c="dimmed" mb="md">
+        Vendors list products. Consumers buy and report prices. The card shows the vendor's asking price next to community-reported prices for the same product.
+      </Text>
 
       {user?.role === 'vendor' && (
         <Paper withBorder p="md" radius="md" mb="lg">
-          <Title order={3} mb="sm">Post a listing</Title>
+          <Title order={3} mb="sm">List a product</Title>
           <form onSubmit={add}>
-            <Stack gap="sm" maw={520}>
-              <TextInput label="Title" placeholder="e.g. Fresh tomatoes" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            <Stack gap="sm" maw={620}>
+              <TextInput label="Product name" placeholder="e.g. Onion" value={title} onChange={(e) => setTitle(e.target.value)} required />
               <Textarea label="Description" placeholder="optional details" value={description} onChange={(e) => setDescription(e.target.value)} />
               <Group gap="xs" grow>
+                <TextInput label="Category" placeholder="e.g. Vegetable" value={category} onChange={(e) => setCategory(e.target.value)} />
                 <NumberInput label="Price" placeholder="0.00" value={price} onChange={(v) => setPrice(v ?? '')} min={0} decimalScale={2} required />
+              </Group>
+              <Group gap="xs" grow>
                 <TextInput label="Unit" placeholder="kg, L, dozen" value={unit} onChange={(e) => setUnit(e.target.value)} />
                 <NumberInput label="Qty available" placeholder="0" value={quantityAvailable} onChange={(v) => setQty(v ?? '')} min={0} />
               </Group>
@@ -117,9 +144,14 @@ export default function Marketplace() {
                 <TextInput label="Area" placeholder="e.g. Mirpur" value={area} onChange={(e) => setArea(e.target.value)} />
                 <TextInput label="District" placeholder="e.g. Dhaka" value={district} onChange={(e) => setDistrict(e.target.value)} />
               </Group>
+              <Group align="end" gap="xs">
+                <TextInput label="Latitude" placeholder="optional" value={lat} onChange={(e) => setLat(e.target.value)} flex={1} />
+                <TextInput label="Longitude" placeholder="optional" value={lng} onChange={(e) => setLng(e.target.value)} flex={1} />
+                <Button type="button" variant="default" onClick={getLocation}>Use my location</Button>
+              </Group>
               <TextInput label="Contact" placeholder="phone or email" value={contact} onChange={(e) => setContact(e.target.value)} />
               <FileInput label="Photo" accept="image/*" placeholder="optional" value={photo} onChange={setPhoto} clearable />
-              <Button type="submit">Post listing</Button>
+              <Button type="submit">Publish listing</Button>
             </Stack>
           </form>
           {err && <Alert color="red" mt="sm">{err}</Alert>}
@@ -131,38 +163,68 @@ export default function Marketplace() {
         <Text>No listings yet.</Text>
       ) : (
         <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-          {listings.map((l) => (
-            <Card key={l._id} withBorder padding="sm" radius="md">
-              {l.imageUrl && (
-                <Card.Section>
-                  <Image src={SERVER + l.imageUrl} alt={l.title} h={140} fit="cover" />
-                </Card.Section>
-              )}
-              <Title order={3} mt="xs">{l.title}</Title>
-              <Text>{l.price} / {l.unit} {l.quantityAvailable ? `(${l.quantityAvailable} avail)` : ''}</Text>
-              {l.description && <Text size="sm">{l.description}</Text>}
-              <Text size="xs" c="dimmed">{[l.area, l.district].filter(Boolean).join(', ')}</Text>
-              <Text size="xs" c="dimmed">By {l.vendorId?.name}{l.contact && ` — ${l.contact}`}</Text>
-              <Group gap="xs" mt="xs">
-                {l.contact && (
-                  <Button size="xs" variant="light" component="a" href={`tel:${l.contact}`}>
-                    Contact
-                  </Button>
+          {listings.map((l) => {
+            const cmp = l.comparison || { count: 0 }
+            const diff = cmp.count > 0 ? l.price - cmp.avg : null
+            const diffPct = diff != null && cmp.avg > 0 ? (diff / cmp.avg) * 100 : null
+            return (
+              <Card key={l._id} withBorder padding="sm" radius="md">
+                {l.imageUrl && (
+                  <Card.Section>
+                    <Image src={SERVER + l.imageUrl} alt={l.title} h={140} fit="cover" />
+                  </Card.Section>
                 )}
-                {user && user.id !== l.vendorId?._id && user.role !== 'admin' && (
-                  <Button size="xs" onClick={() => openOrder(l)}>Order</Button>
-                )}
-                {user && l.vendorId?._id && user.id !== l.vendorId._id && (
-                  <Button size="xs" variant="light" component="a" href={`/messages?to=${l.vendorId._id}`}>
-                    Message
-                  </Button>
-                )}
-                {(user?.id === l.vendorId?._id || user?.role === 'admin') && (
-                  <Button size="xs" color="red" onClick={() => remove(l._id)}>Delete</Button>
-                )}
-              </Group>
-            </Card>
-          ))}
+                <Group justify="space-between" align="flex-start" mt="xs" wrap="nowrap">
+                  <Title order={3}>{l.title}</Title>
+                  {l.category && <Badge variant="light" color="green">{l.category}</Badge>}
+                </Group>
+                <Text fw={600}>{l.price} / {l.unit} {l.quantityAvailable ? `(${l.quantityAvailable} avail)` : ''}</Text>
+                {l.description && <Text size="sm">{l.description}</Text>}
+                <Text size="xs" c="dimmed">{[l.area, l.district].filter(Boolean).join(', ')}</Text>
+                <Text size="xs" c="dimmed">By {l.vendorId?.name}{l.contact && ` — ${l.contact}`}</Text>
+
+                <Paper bg="#f0fdf4" p="xs" radius="sm" mt="xs">
+                  {cmp.count > 0 ? (
+                    <>
+                      <Text size="xs" fw={600}>Community reports ({cmp.count})</Text>
+                      <Text size="xs">avg {cmp.avg.toFixed(2)} · min {cmp.min} · max {cmp.max}</Text>
+                      {diffPct != null && (
+                        <Text size="xs" c={diffPct > 5 ? 'red.7' : diffPct < -5 ? 'green.8' : 'dimmed'}>
+                          listed {diffPct > 0 ? '+' : ''}{diffPct.toFixed(0)}% vs avg
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    <Text size="xs" c="dimmed">No community reports yet — be the first.</Text>
+                  )}
+                </Paper>
+
+                <Group gap="xs" mt="xs">
+                  {l.contact && (
+                    <Button size="xs" variant="light" component="a" href={`tel:${l.contact}`}>
+                      Contact
+                    </Button>
+                  )}
+                  {user && user.id !== l.vendorId?._id && user.role !== 'admin' && (
+                    <Button size="xs" onClick={() => openOrder(l)}>Order</Button>
+                  )}
+                  {user && l.vendorId?._id && user.id !== l.vendorId._id && (
+                    <Button size="xs" variant="light" component={Link} to={`/messages?to=${l.vendorId._id}`}>
+                      Message
+                    </Button>
+                  )}
+                  {user && user.role !== 'admin' && l.productId?._id && (
+                    <Button size="xs" variant="subtle" component={Link} to={`/submit?productId=${l.productId._id}`}>
+                      Report price
+                    </Button>
+                  )}
+                  {(user?.id === l.vendorId?._id || user?.role === 'admin') && (
+                    <Button size="xs" color="red" onClick={() => remove(l._id)}>Delete</Button>
+                  )}
+                </Group>
+              </Card>
+            )
+          })}
         </SimpleGrid>
       )}
 

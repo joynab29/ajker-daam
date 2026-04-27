@@ -19,3 +19,13 @@ main {
   margin: 0 auto;
   padding: 24px;
 }
+
+@media (max-width: 640px) {
+  main {
+    padding: 12px;
+  }
+}
+
+img {
+  max-width: 100%;
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Title,
   Select,
@@ -21,6 +21,8 @@ import { useAuth } from '../AuthContext.jsx'
 export default function Submit() {
   const { user } = useAuth()
   const nav = useNavigate()
+  const [params] = useSearchParams()
+  const initialProductId = params.get('productId') || ''
   const [products, setProducts] = useState(null)
   const [productId, setProductId] = useState('')
   const [price, setPrice] = useState('')
@@ -38,13 +40,16 @@ export default function Submit() {
     api('/products')
       .then((d) => {
         setProducts(d.products)
-        if (d.products[0]) {
-          setProductId(d.products[0]._id)
-          setUnit(d.products[0].unit || 'kg')
+        const preselect = initialProductId && d.products.find((p) => p._id === initialProductId)
+        const fallback = d.products[0]
+        const chosen = preselect || fallback
+        if (chosen) {
+          setProductId(chosen._id)
+          setUnit(chosen.unit || 'kg')
         }
       })
       .catch((e) => setErr(e.message))
-  }, [])
+  }, [initialProductId])
 
   function getLocation() {
     if (!navigator.geolocation) return setErr('geolocation not supported')

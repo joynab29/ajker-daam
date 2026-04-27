@@ -2,6 +2,7 @@ import { Router } from 'express'
 import mongoose from 'mongoose'
 import { PriceReport } from '../models/PriceReport.js'
 import { Product } from '../models/Product.js'
+import { Listing } from '../models/Listing.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireRole } from '../middleware/role.js'
 import { upload } from '../middleware/upload.js'
@@ -33,28 +34,104 @@ router.get('/anomalies', async (_req, res) => {
   res.json({ items })
 })
 
-router.get('/history', async (req, res) => {
-  const { productId, days } = req.query
-  if (!productId) return res.status(400).json({ error: 'productId required' })
-  const cutoff = new Date(Date.now() - (Number(days) || 30) * 24 * 60 * 60 * 1000)
-  const rows = await PriceReport.aggregate([
-    {
-      $match: {
-        productId: new mongoose.Types.ObjectId(productId),
-        createdAt: { $gte: cutoff },
-      },
-    },
+router.get('/markups', async (req, res) => {
+  const threshold = Number(req.query.threshold) || 0.2
+  const listings = await Listing.find({ productId: { $ne: null } })
+    .sort({ createdAt: -1 })
+    .limit(500)
+    .populate('vendorId', 'name')
+    .populate('productId', 'name unit')
+
+  const productIds = [...new Set(listings.map((l) => l.productId?._id?.toString()).filter(Boolean))]
+    .map((id) => new mongoose.Types.ObjectId(id))
+
+  const reportStats = await PriceReport.aggregate([
+    { $match: { productId: { $in: productIds } } },
     {
       $group: {
-        _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+        _id: '$productId',
         avg: { $avg: '$price' },
         min: { $min: '$price' },
         max: { $max: '$price' },
         count: { $sum: 1 },
       },
     },
-    { $sort: { _id: 1 } },
   ])
+  const byProduct = Object.fromEntries(
+    reportStats.map((r) => [r._id.toString(), r]),
+  )
+
+  const items = []
+  for (const l of listings) {
+    const pid = l.productId?._id?.toString()
+    const stat = pid && byProduct[pid]
+    if (!stat || !stat.count || !stat.avg) continue
+    const diff = (l.price - stat.avg) / stat.avg
+    if (Math.abs(diff) >= threshold) {
+      items.push({
+        listing: {
+          _id: l._id,
+          title: l.title,
+          price: l.price,
+          unit: l.unit,
+          area: l.area,
+          district: l.district,
+          createdAt: l.createdAt,
+          vendor: l.vendorId,
+          product: l.productId,
+        },
+        report_avg: stat.avg,
+        report_min: stat.min,
+        report_max: stat.max,
+        report_count: stat.count,
+        diff,
+        direction: diff > 0 ? 'overpriced' : 'underpriced',
+      })
+    }
+  }
+
+  items.sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
+  res.json({ items, threshold })
+})
+
+router.get('/history', async (req, res) => {
+  const { productId, days } = req.query
+  if (!productId) return res.status(400).json({ error: 'productId required' })
+  const cutoff = new Date(Date.now() - (Number(days) || 30) * 24 * 60 * 60 * 1000)
+  const pid = new mongoose.Types.ObjectId(productId)
+
+  const [rows, listingStats] = await Promise.all([
+    PriceReport.aggregate([
+      { $match: { productId: pid, createdAt: { $gte: cutoff } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          avg: { $avg: '$price' },
+          min: { $min: '$price' },
+          max: { $max: '$price' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]),
+    Listing.aggregate([
+      { $match: { productId: pid } },
+      {
+        $group: {
+          _id: null,
+          avg: { $avg: '$price' },
+          min: { $min: '$price' },
+          max: { $max: '$price' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+  ])
+
+  const listing_summary = listingStats[0]
+    ? { avg: listingStats[0].avg, min: listingStats[0].min, max: listingStats[0].max, count: listingStats[0].count }
+    : { count: 0 }
+
   res.json({
     history: rows.map((r) => ({
       date: r._id,
@@ -62,7 +139,9 @@ router.get('/history', async (req, res) => {
       min: r.min,
       max: r.max,
       count: r.count,
+      listing_avg: listing_summary.avg ?? null,
     })),
+    listing_summary,
   })
 })
 
@@ -117,29 +196,77 @@ router.get('/by-location', async (req, res) => {
 router.get('/by-area', async (req, res) => {
   const { productId } = req.query
   if (!productId) return res.status(400).json({ error: 'productId required' })
-  const rows = await PriceReport.aggregate([
-    { $match: { productId: new mongoose.Types.ObjectId(productId) } },
-    {
-      $group: {
-        _id: { area: '$area', district: '$district' },
-        avg: { $avg: '$price' },
-        min: { $min: '$price' },
-        max: { $max: '$price' },
-        count: { $sum: 1 },
+  const pid = new mongoose.Types.ObjectId(productId)
+
+  const [reportRows, listingRows] = await Promise.all([
+    PriceReport.aggregate([
+      { $match: { productId: pid } },
+      {
+        $group: {
+          _id: { area: '$area', district: '$district' },
+          avg: { $avg: '$price' },
+          min: { $min: '$price' },
+          max: { $max: '$price' },
+          count: { $sum: 1 },
+        },
       },
-    },
-    { $sort: { avg: 1 } },
+    ]),
+    Listing.aggregate([
+      { $match: { productId: pid } },
+      {
+        $group: {
+          _id: { area: '$area', district: '$district' },
+          avg: { $avg: '$price' },
+          min: { $min: '$price' },
+          max: { $max: '$price' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
   ])
-  res.json({
-    rows: rows.map((r) => ({
+
+  const key = (a, d) => `${a || ''}|${d || ''}`
+  const merged = new Map()
+  for (const r of reportRows) {
+    merged.set(key(r._id.area, r._id.district), {
       area: r._id.area,
       district: r._id.district,
-      avg: r.avg,
-      min: r.min,
-      max: r.max,
-      count: r.count,
-    })),
-  })
+      report_avg: r.avg,
+      report_min: r.min,
+      report_max: r.max,
+      report_count: r.count,
+      listing_avg: null,
+      listing_min: null,
+      listing_max: null,
+      listing_count: 0,
+    })
+  }
+  for (const r of listingRows) {
+    const k = key(r._id.area, r._id.district)
+    const existing = merged.get(k) || {
+      area: r._id.area,
+      district: r._id.district,
+      report_avg: null,
+      report_min: null,
+      report_max: null,
+      report_count: 0,
+    }
+    existing.listing_avg = r.avg
+    existing.listing_min = r.min
+    existing.listing_max = r.max
+    existing.listing_count = r.count
+    merged.set(k, existing)
+  }
+
+  const rows = [...merged.values()].map((r) => ({
+    ...r,
+    markup_pct:
+      r.listing_avg != null && r.report_avg != null && r.report_avg > 0
+        ? ((r.listing_avg - r.report_avg) / r.report_avg) * 100
+        : null,
+  })).sort((a, b) => (a.report_avg ?? a.listing_avg ?? 0) - (b.report_avg ?? b.listing_avg ?? 0))
+
+  res.json({ rows })
 })
 
 router.get('/', async (req, res) => {

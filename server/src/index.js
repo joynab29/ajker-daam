@@ -9,6 +9,7 @@ import { Server as SocketServer } from 'socket.io'
 import { connectDb } from './db.js'
 import { User } from './models/User.js'
 import { Message } from './models/Message.js'
+import { CommunityMessage } from './models/CommunityMessage.js'
 import authRoutes from './routes/auth.js'
 import productRoutes from './routes/products.js'
 import priceRoutes from './routes/prices.js'
@@ -31,8 +32,6 @@ const io = new SocketServer(server, {
 })
 setIo(io)
 
-const chatHistory = []
-
 io.use((socket, next) => {
   const token = socket.handshake.auth?.token
   if (!token) return next()
@@ -44,25 +43,52 @@ io.use((socket, next) => {
   next()
 })
 
-io.on('connection', (socket) => {
+io.on('connection', async (socket) => {
   console.log('socket connected', socket.id)
   if (socket.data.userId) {
     socket.join(`user:${socket.data.userId}`)
   }
 
-  socket.emit('chat:history', chatHistory)
-  socket.on('chat:send', (msg) => {
-    if (!msg || !msg.text || !msg.name) return
-    const entry = {
-      id: Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-      name: String(msg.name).slice(0, 40),
-      role: msg.role || 'guest',
-      text: String(msg.text).slice(0, 500),
-      at: Date.now(),
+  try {
+    const recent = await CommunityMessage.find()
+      .sort({ createdAt: -1 })
+      .limit(200)
+      .lean()
+    const history = recent.reverse().map((m) => ({
+      id: m._id.toString(),
+      name: m.name,
+      role: m.role,
+      text: m.text,
+      at: new Date(m.createdAt).getTime(),
+    }))
+    socket.emit('chat:history', history)
+  } catch (e) {
+    console.error('community chat history failed:', e.message)
+    socket.emit('chat:history', [])
+  }
+
+  socket.on('chat:send', async (msg) => {
+    try {
+      if (!msg || !msg.text || !String(msg.text).trim()) return
+      if (!socket.data.userId) return
+      const user = await User.findById(socket.data.userId).select('name role')
+      if (!user) return
+      const saved = await CommunityMessage.create({
+        userId: user._id,
+        name: user.name,
+        role: user.role,
+        text: String(msg.text).slice(0, 500),
+      })
+      io.emit('chat:msg', {
+        id: saved._id.toString(),
+        name: saved.name,
+        role: saved.role,
+        text: saved.text,
+        at: new Date(saved.createdAt).getTime(),
+      })
+    } catch (e) {
+      console.error('community chat send failed:', e.message)
     }
-    chatHistory.push(entry)
-    while (chatHistory.length > 50) chatHistory.shift()
-    io.emit('chat:msg', entry)
   })
 
   socket.on('chat:dm:send', async (payload, ack) => {
