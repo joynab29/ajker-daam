@@ -78,7 +78,7 @@ export default function ProductDetail() {
                 <XAxis dataKey="time" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="price" stroke="#166534" name="reports" />
+                <Line type="monotone" dataKey="price" stroke="#0b3d2e" strokeWidth={2.5} name="reports" />
                 {listingAvg != null && (
                   <ReferenceLine
                     y={listingAvg}

@@ -44,9 +44,10 @@ export default function Signup() {
   }
 
   return (
-    <Stack maw={400} gap="md">
-      <Title order={1}>Sign up</Title>
-      <Paper withBorder p="md" radius="md">
+    <Stack maw={440} gap="md" mx="auto">
+      <span className="section-eyebrow">Get started</span>
+      <h1 className="display" style={{ margin: 0 }}>Join <span style={{ color: '#65a30d' }}>Ajker Daam</span></h1>
+      <Paper p="lg" radius="xl" className="card-soft">
         <form onSubmit={submit}>
           <Stack gap="sm">
             <TextInput
@@ -82,13 +83,22 @@ export default function Signup() {
               ]}
               allowDeselect={false}
             />
-            <Button type="submit" loading={busy}>Sign up</Button>
+            <Button
+              type="submit"
+              loading={busy}
+              radius="xl"
+              size="md"
+              color="lime"
+              styles={{ root: { color: '#0b3d2e', fontWeight: 700 } }}
+            >
+              Sign up
+            </Button>
           </Stack>
         </form>
       </Paper>
-      {err && <Alert color="red">{err}</Alert>}
+      {err && <Alert color="red" radius="lg">{err}</Alert>}
       <Text size="sm">
-        Have an account? <Anchor component={Link} to="/login">Login</Anchor>
+        Have an account? <Anchor component={Link} to="/login" c="forest.7" fw={600}>Login</Anchor>
       </Text>
     </Stack>
   )

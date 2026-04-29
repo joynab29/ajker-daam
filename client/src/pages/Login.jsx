@@ -41,9 +41,10 @@ export default function Login() {
   }
 
   return (
-    <Stack maw={400} gap="md">
-      <Title order={1}>Login</Title>
-      <Paper withBorder p="md" radius="md">
+    <Stack maw={440} gap="md" mx="auto">
+      <span className="section-eyebrow">Welcome back</span>
+      <h1 className="display" style={{ margin: 0 }}>Sign in to <span style={{ color: '#65a30d' }}>Ajker Daam</span></h1>
+      <Paper p="lg" radius="xl" className="card-soft">
         <form onSubmit={submit}>
           <Stack gap="sm">
             <TextInput
@@ -61,13 +62,22 @@ export default function Login() {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
-            <Button type="submit" loading={busy}>Login</Button>
+            <Button
+              type="submit"
+              loading={busy}
+              radius="xl"
+              size="md"
+              color="lime"
+              styles={{ root: { color: '#0b3d2e', fontWeight: 700 } }}
+            >
+              Login
+            </Button>
           </Stack>
         </form>
       </Paper>
-      {err && <Alert color="red">{err}</Alert>}
+      {err && <Alert color="red" radius="lg">{err}</Alert>}
       <Text size="sm">
-        No account? <Anchor component={Link} to="/signup">Sign up</Anchor>
+        No account? <Anchor component={Link} to="/signup" c="forest.7" fw={600}>Sign up</Anchor>
       </Text>
     </Stack>
   )

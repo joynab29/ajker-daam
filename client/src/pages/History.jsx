@@ -93,9 +93,9 @@ export default function History() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="avg" stroke="#166534" name="reports avg" />
-                <Line type="monotone" dataKey="min" stroke="#15803d" name="reports min" />
-                <Line type="monotone" dataKey="max" stroke="#4ade80" name="reports max" />
+                <Line type="monotone" dataKey="avg" stroke="#0b3d2e" strokeWidth={2.5} name="reports avg" />
+                <Line type="monotone" dataKey="min" stroke="#65a30d" name="reports min" />
+                <Line type="monotone" dataKey="max" stroke="#bef264" name="reports max" />
                 {listingSummary.count > 0 && (
                   <ReferenceLine
                     y={listingSummary.avg}

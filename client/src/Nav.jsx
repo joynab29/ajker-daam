@@ -4,16 +4,37 @@ import { useAuth } from './AuthContext.jsx'
 import Notifier from './Notifier.jsx'
 import InstallButton from './InstallButton.jsx'
 
-const linkStyle = { color: '#fff', fontWeight: 500 }
-const activeStyle = { color: 'var(--sky)', fontWeight: 600 }
+const linkStyle = { color: 'rgba(255,255,255,0.86)', fontWeight: 500, fontSize: 14 }
+const activeStyle = { color: '#bef264', fontWeight: 700, fontSize: 14 }
 
 function NavLink({ to, label }) {
   const { pathname } = useLocation()
   const active = pathname === to || (to !== '/' && pathname.startsWith(to))
   return (
-    <Anchor component={Link} to={to} style={active ? activeStyle : linkStyle}>
+    <Anchor component={Link} to={to} style={active ? activeStyle : linkStyle} underline="never">
       {label}
     </Anchor>
+  )
+}
+
+function BrandMark() {
+  return (
+    <span
+      aria-hidden
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 32,
+        height: 32,
+        borderRadius: 999,
+        background: '#bef264',
+        color: '#0b3d2e',
+        fontWeight: 800,
+      }}
+    >
+      ৳
+    </span>
   )
 }
 
@@ -22,17 +43,23 @@ export default function Nav() {
   return (
     <Group
       gap="md"
-      px="md"
-      py="sm"
+      px="lg"
+      py="md"
       style={{
-        background: 'var(--blue)',
+        background: 'linear-gradient(90deg, #0b3d2e 0%, #134e3a 100%)',
         color: '#fff',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        boxShadow: '0 6px 20px rgba(11, 61, 46, 0.18)',
       }}
       wrap="wrap"
     >
-      <Anchor component={Link} to="/" style={{ ...linkStyle, fontSize: 18, fontWeight: 700 }}>
-        Ajker Daam
+      <Anchor
+        component={Link}
+        to="/"
+        underline="never"
+        style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#fff' }}
+      >
+        <BrandMark />
+        <Text fw={800} size="lg" c="#fff">Ajker Daam</Text>
       </Anchor>
       <NavLink to="/dashboard" label="Live" />
       <NavLink to="/compare" label="Compare" />
@@ -51,21 +78,37 @@ export default function Nav() {
       <Notifier />
       {user ? (
         <>
-          <Group gap={6} wrap="nowrap">
-            <Text size="sm" c="white">{user.name}</Text>
-            <Badge size="xs" variant="filled" color={roleColor(user.role)}>
+          <Group gap={8} wrap="nowrap">
+            <Text size="sm" c="rgba(255,255,255,0.92)" fw={500}>{user.name}</Text>
+            <Badge size="sm" variant="filled" color={roleColor(user.role)} radius="xl">
               {user.role}
             </Badge>
           </Group>
-          <Button size="xs" color="green" variant="filled" onClick={logout}>
+          <Button
+            size="xs"
+            radius="xl"
+            color="lime"
+            variant="filled"
+            styles={{ root: { color: '#0b3d2e', fontWeight: 700 } }}
+            onClick={logout}
+          >
             Logout
           </Button>
         </>
       ) : (
-        <>
-          <Anchor component={Link} to="/login" style={linkStyle}>Login</Anchor>
-          <Anchor component={Link} to="/signup" style={linkStyle}>Sign up</Anchor>
-        </>
+        <Group gap="xs" wrap="nowrap">
+          <Anchor component={Link} to="/login" style={linkStyle} underline="never">Login</Anchor>
+          <Button
+            component={Link}
+            to="/signup"
+            size="xs"
+            radius="xl"
+            color="lime"
+            styles={{ root: { color: '#0b3d2e', fontWeight: 700 } }}
+          >
+            Sign up
+          </Button>
+        </Group>
       )}
     </Group>
   )
@@ -73,6 +116,6 @@ export default function Nav() {
 
 function roleColor(role) {
   if (role === 'admin') return 'red'
-  if (role === 'vendor') return 'cyan'
+  if (role === 'vendor') return 'lime'
   return 'gray'
 }

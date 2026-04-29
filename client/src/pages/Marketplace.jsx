@@ -120,13 +120,14 @@ export default function Marketplace() {
 
   return (
     <div>
-      <Title order={1} mb="md">Marketplace</Title>
-      <Text c="dimmed" mb="md">
-        Vendors list products. Consumers buy and report prices. The card shows the vendor's asking price next to community-reported prices for the same product.
+      <span className="section-eyebrow">Marketplace</span>
+      <h1 className="display" style={{ margin: '8px 0 6px' }}>Buy fresh. <span style={{ color: '#65a30d' }}>Compare honestly.</span></h1>
+      <Text c="dimmed" mb="lg" maw={680}>
+        Vendors list products. Consumers buy and report real prices. Each card pairs the vendor's asking price with what the community is actually paying.
       </Text>
 
       {user?.role === 'vendor' && (
-        <Paper withBorder p="md" radius="md" mb="lg">
+        <Paper p="lg" radius="xl" mb="lg" className="card-soft">
           <Title order={3} mb="sm">List a product</Title>
           <form onSubmit={add}>
             <Stack gap="sm" maw={620}>
@@ -151,47 +152,80 @@ export default function Marketplace() {
               </Group>
               <TextInput label="Contact" placeholder="phone or email" value={contact} onChange={(e) => setContact(e.target.value)} />
               <FileInput label="Photo" accept="image/*" placeholder="optional" value={photo} onChange={setPhoto} clearable />
-              <Button type="submit">Publish listing</Button>
+              <Button type="submit" radius="xl" color="lime" styles={{ root: { color: '#0b3d2e', fontWeight: 700 } }}>
+                Publish listing
+              </Button>
             </Stack>
           </form>
           {err && <Alert color="red" mt="sm">{err}</Alert>}
         </Paper>
       )}
 
-      <Title order={2} mt="lg" mb="sm">All listings</Title>
+      <Group justify="space-between" align="end" mt="xl" mb="sm" wrap="wrap">
+        <Stack gap={4}>
+          <span className="section-eyebrow">All listings</span>
+          <h2 className="display" style={{ margin: 0 }}>What's in the basket today</h2>
+        </Stack>
+      </Group>
       {listings.length === 0 ? (
         <Text>No listings yet.</Text>
       ) : (
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
+        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="lg">
           {listings.map((l) => {
             const cmp = l.comparison || { count: 0 }
             const diff = cmp.count > 0 ? l.price - cmp.avg : null
             const diffPct = diff != null && cmp.avg > 0 ? (diff / cmp.avg) * 100 : null
             return (
-              <Card key={l._id} withBorder padding="sm" radius="md">
-                {l.imageUrl && (
+              <Card key={l._id} padding="lg" radius="xl" className="card-soft">
+                {l.imageUrl ? (
                   <Card.Section>
-                    <Image src={SERVER + l.imageUrl} alt={l.title} h={140} fit="cover" />
+                    <Image src={SERVER + l.imageUrl} alt={l.title} h={160} fit="cover" />
+                  </Card.Section>
+                ) : (
+                  <Card.Section
+                    style={{
+                      height: 160,
+                      background: 'linear-gradient(135deg, #ecfccb 0%, #bef264 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 64,
+                    }}
+                  >
+                    🥗
                   </Card.Section>
                 )}
-                <Group justify="space-between" align="flex-start" mt="xs" wrap="nowrap">
-                  <Title order={3}>{l.title}</Title>
-                  {l.category && <Badge variant="light" color="green">{l.category}</Badge>}
+                <Group justify="space-between" align="flex-start" mt="md" wrap="nowrap">
+                  <Title order={4} style={{ margin: 0 }}>{l.title}</Title>
+                  {l.category && <span className="chip-lime">{l.category}</span>}
                 </Group>
-                <Text fw={600}>{l.price} / {l.unit} {l.quantityAvailable ? `(${l.quantityAvailable} avail)` : ''}</Text>
-                {l.description && <Text size="sm">{l.description}</Text>}
-                <Text size="xs" c="dimmed">{[l.area, l.district].filter(Boolean).join(', ')}</Text>
-                <Text size="xs" c="dimmed">By {l.vendorId?.name}{l.contact && ` — ${l.contact}`}</Text>
+                <Text fw={800} size="xl" c="forest.7" mt={4}>
+                  ৳{l.price} <Text span size="sm" c="dimmed" fw={500}>/ {l.unit}</Text>
+                </Text>
+                {l.quantityAvailable ? (
+                  <Text size="xs" c="dimmed">{l.quantityAvailable} {l.unit} available</Text>
+                ) : null}
+                {l.description && <Text size="sm" mt={6}>{l.description}</Text>}
+                <Text size="xs" c="dimmed" mt={6}>📍 {[l.area, l.district].filter(Boolean).join(', ') || '—'}</Text>
+                <Text size="xs" c="dimmed">By {l.vendorId?.name}{l.contact && ` · ${l.contact}`}</Text>
 
-                <Paper bg="#f0fdf4" p="xs" radius="sm" mt="xs">
+                <Paper bg="#f7fde9" p="sm" radius="lg" mt="md" style={{ border: '1px solid #ecfccb' }}>
                   {cmp.count > 0 ? (
                     <>
-                      <Text size="xs" fw={600}>Community reports ({cmp.count})</Text>
-                      <Text size="xs">avg {cmp.avg.toFixed(2)} · min {cmp.min} · max {cmp.max}</Text>
+                      <Text size="xs" fw={700} c="forest.7" tt="uppercase" style={{ letterSpacing: '0.08em' }}>
+                        Community ({cmp.count})
+                      </Text>
+                      <Text size="sm" mt={2}>avg <b>৳{cmp.avg.toFixed(2)}</b> · min ৳{cmp.min} · max ৳{cmp.max}</Text>
                       {diffPct != null && (
-                        <Text size="xs" c={diffPct > 5 ? 'red.7' : diffPct < -5 ? 'green.8' : 'dimmed'}>
+                        <Badge
+                          mt={6}
+                          radius="xl"
+                          variant="filled"
+                          color={diffPct > 5 ? 'red' : diffPct < -5 ? 'lime' : 'gray'}
+                          styles={{ root: diffPct < -5 ? { color: '#0b3d2e' } : undefined }}
+                        >
                           listed {diffPct > 0 ? '+' : ''}{diffPct.toFixed(0)}% vs avg
-                        </Text>
+                        </Badge>
                       )}
                     </>
                   ) : (
@@ -199,27 +233,35 @@ export default function Marketplace() {
                   )}
                 </Paper>
 
-                <Group gap="xs" mt="xs">
+                <Group gap="xs" mt="md">
+                  {user && user.id !== l.vendorId?._id && user.role !== 'admin' && (
+                    <Button
+                      size="xs"
+                      radius="xl"
+                      color="lime"
+                      styles={{ root: { color: '#0b3d2e', fontWeight: 700 } }}
+                      onClick={() => openOrder(l)}
+                    >
+                      🛒 Order
+                    </Button>
+                  )}
                   {l.contact && (
-                    <Button size="xs" variant="light" component="a" href={`tel:${l.contact}`}>
+                    <Button size="xs" radius="xl" variant="outline" color="forest" component="a" href={`tel:${l.contact}`}>
                       Contact
                     </Button>
                   )}
-                  {user && user.id !== l.vendorId?._id && user.role !== 'admin' && (
-                    <Button size="xs" onClick={() => openOrder(l)}>Order</Button>
-                  )}
                   {user && l.vendorId?._id && user.id !== l.vendorId._id && (
-                    <Button size="xs" variant="light" component={Link} to={`/messages?to=${l.vendorId._id}`}>
+                    <Button size="xs" radius="xl" variant="outline" color="forest" component={Link} to={`/messages?to=${l.vendorId._id}`}>
                       Message
                     </Button>
                   )}
                   {user && user.role !== 'admin' && l.productId?._id && (
-                    <Button size="xs" variant="subtle" component={Link} to={`/submit?productId=${l.productId._id}`}>
+                    <Button size="xs" radius="xl" variant="subtle" color="forest" component={Link} to={`/submit?productId=${l.productId._id}`}>
                       Report price
                     </Button>
                   )}
                   {(user?.id === l.vendorId?._id || user?.role === 'admin') && (
-                    <Button size="xs" color="red" onClick={() => remove(l._id)}>Delete</Button>
+                    <Button size="xs" radius="xl" color="red" variant="light" onClick={() => remove(l._id)}>Delete</Button>
                   )}
                 </Group>
               </Card>

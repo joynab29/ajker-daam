@@ -7,8 +7,8 @@ import { api } from '../api.js'
 const BANGLADESH_CENTER = [23.8103, 90.4125]
 
 function intensityColor(avg, lo, hi) {
-  if (avg <= lo) return '#16a34a'
-  if (avg >= hi) return '#dc2626'
+  if (avg <= lo) return '#65a30d'
+  if (avg >= hi) return '#b91c1c'
   return '#eab308'
 }
 
@@ -50,8 +50,9 @@ export default function PriceHeatmap() {
 
   return (
     <Stack gap="sm">
-      <Title order={1}>Price heatmap</Title>
-      <Text c="dimmed">Average price across Bangladesh districts. Pick a product to update the map.</Text>
+      <span className="section-eyebrow">Heatmap</span>
+      <h1 className="display" style={{ margin: 0 }}>Price across <span style={{ color: '#65a30d' }}>Bangladesh</span></h1>
+      <Text c="dimmed">Average price by district. Pick a product to update the map.</Text>
       <Group gap="md" align="end">
         <Select
           label="Product"
@@ -64,9 +65,9 @@ export default function PriceHeatmap() {
       </Group>
       <Group gap="xs">
         <Text size="sm">Intensity:</Text>
-        <Text size="sm" c="#16a34a">● low</Text>
+        <Text size="sm" c="#65a30d">● low</Text>
         <Text size="sm" c="#eab308">● medium</Text>
-        <Text size="sm" c="#dc2626">● high</Text>
+        <Text size="sm" c="#b91c1c">● high</Text>
       </Group>
       {err && <Alert color="red">{err}</Alert>}
       {points.length === 0 && !err && (
