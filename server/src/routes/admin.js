@@ -30,4 +30,44 @@ router.delete('/users/:id', async (req, res) => {
   res.json({ ok: true })
 })
 
+const BAN_THRESHOLD = 3
+
+router.get('/fraud-counts', async (_req, res) => {
+  const rows = await PriceReport.aggregate([
+    { $match: { status: 'flagged' } },
+    { $group: { _id: '$userId', count: { $sum: 1 } } },
+  ])
+  const counts = Object.fromEntries(rows.map((r) => [r._id?.toString(), r.count]))
+  res.json({ counts, threshold: BAN_THRESHOLD })
+})
+
+router.post('/users/:id/ban', async (req, res) => {
+  const userId = req.params.id
+  const flagged = await PriceReport.countDocuments({ userId, status: 'flagged' })
+  if (flagged < BAN_THRESHOLD) {
+    return res.status(400).json({
+      error: `user has only ${flagged} flagged report(s); needs ≥${BAN_THRESHOLD} to ban`,
+      flagged,
+      threshold: BAN_THRESHOLD,
+    })
+  }
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { status: 'banned', bannedAt: new Date(), banReason: req.body?.reason || `${flagged} flagged reports` },
+    { new: true },
+  ).select('-passwordHash')
+  if (!user) return res.status(404).json({ error: 'user not found' })
+  res.json({ user, flagged, threshold: BAN_THRESHOLD })
+})
+
+router.post('/users/:id/unban', async (req, res) => {
+  const user = await User.findByIdAndUpdate(
+    req.params.id,
+    { status: 'active', bannedAt: null, banReason: '' },
+    { new: true },
+  ).select('-passwordHash')
+  if (!user) return res.status(404).json({ error: 'user not found' })
+  res.json({ user })
+})
+
 export default router

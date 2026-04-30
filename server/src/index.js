@@ -43,11 +43,31 @@ io.use((socket, next) => {
   next()
 })
 
+const presence = new Map() // userId -> connection count
+function onlineUserIds() { return [...presence.keys()] }
+
 io.on('connection', async (socket) => {
   console.log('socket connected', socket.id)
   if (socket.data.userId) {
     socket.join(`user:${socket.data.userId}`)
+    const prev = presence.get(socket.data.userId) || 0
+    presence.set(socket.data.userId, prev + 1)
+    if (prev === 0) {
+      io.emit('presence:update', { userId: socket.data.userId, online: true })
+    }
   }
+  socket.emit('presence:list', { online: onlineUserIds(), totalOnline: presence.size })
+
+  socket.on('disconnect', () => {
+    if (!socket.data.userId) return
+    const prev = presence.get(socket.data.userId) || 0
+    if (prev <= 1) {
+      presence.delete(socket.data.userId)
+      io.emit('presence:update', { userId: socket.data.userId, online: false })
+    } else {
+      presence.set(socket.data.userId, prev - 1)
+    }
+  })
 
   try {
     const recent = await CommunityMessage.find()

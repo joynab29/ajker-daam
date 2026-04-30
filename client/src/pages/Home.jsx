@@ -1,9 +1,34 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Title, Text, SimpleGrid, Card, Image, Anchor, Alert, Group, Button, Stack, Box } from '@mantine/core'
+import { Title, Text, SimpleGrid, Card, Anchor, Alert, Group, Button, Stack, Box } from '@mantine/core'
 import { api } from '../api.js'
 
 const SERVER = 'http://localhost:4000'
+
+function HeroImage({ src, alt, fallbackEmoji = '🛒', height = 140 }) {
+  const [errored, setErrored] = useState(false)
+  if (!src || errored) {
+    return (
+      <Box
+        style={{
+          height,
+          background: 'linear-gradient(135deg, #ecfccb 0%, #bef264 100%)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 56,
+        }}
+      >
+        {fallbackEmoji}
+      </Box>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      onError={() => setErrored(true)}
+      style={{ width: '100%', height, objectFit: 'cover', display: 'block' }}
+    />
+  )
+}
 
 export default function Home() {
   const [products, setProducts] = useState([])
@@ -101,24 +126,22 @@ export default function Home() {
                 onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
                 onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
               >
-                {p.imageUrl ? (
-                  <Card.Section>
-                    <Image src={(p.imageUrl.startsWith('http') ? '' : SERVER) + p.imageUrl} alt={p.name} h={140} fit="cover" />
-                  </Card.Section>
-                ) : (
-                  <Card.Section
-                    style={{
-                      height: 140,
-                      background: 'linear-gradient(135deg, #ecfccb 0%, #bef264 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 56,
-                    }}
-                  >
-                    🥬
-                  </Card.Section>
-                )}
+                <Card.Section>
+                  <HeroImage
+                    src={
+                      p.imageUrl
+                        ? p.imageUrl.startsWith('http')
+                          ? p.imageUrl
+                          : p.imageUrl.startsWith('/uploads/')
+                            ? SERVER + p.imageUrl
+                            : p.imageUrl
+                        : null
+                    }
+                    alt={p.name}
+                    height={140}
+                    fallbackEmoji="🥬"
+                  />
+                </Card.Section>
                 <Group justify="space-between" align="center" mt="md">
                   <Title order={4} style={{ margin: 0 }}>{p.name}</Title>
                   {p.category && <span className="chip-lime">{p.category}</span>}

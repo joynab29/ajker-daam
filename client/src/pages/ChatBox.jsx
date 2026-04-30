@@ -15,6 +15,7 @@ export default function ChatBox() {
   const [messages, setMessages] = useState([])
   const [text, setText] = useState('')
   const [err, setErr] = useState('')
+  const [online, setOnline] = useState(() => new Set())
   const listRef = useRef(null)
 
   useEffect(() => {
@@ -34,6 +35,27 @@ export default function ChatBox() {
   function refreshThreads() {
     api('/chat/threads').then((d) => setThreads(d.threads)).catch(() => {})
   }
+
+  useEffect(() => {
+    if (!user) return
+    function onPresenceList({ online }) {
+      setOnline(new Set(online || []))
+    }
+    function onPresenceUpdate({ userId, online: isOnline }) {
+      setOnline((prev) => {
+        const next = new Set(prev)
+        if (isOnline) next.add(userId)
+        else next.delete(userId)
+        return next
+      })
+    }
+    socket.on('presence:list', onPresenceList)
+    socket.on('presence:update', onPresenceUpdate)
+    return () => {
+      socket.off('presence:list', onPresenceList)
+      socket.off('presence:update', onPresenceUpdate)
+    }
+  }, [user])
 
   useEffect(() => {
     if (!user) return
@@ -122,13 +144,26 @@ export default function ChatBox() {
                 onClick={() => pickPeer(t.user._id)}
                 style={{
                   cursor: 'pointer',
-                  padding: 6,
-                  borderRadius: 6,
+                  padding: 8,
+                  borderRadius: 10,
                   background: t.user._id === peerId ? '#dcfce7' : 'transparent',
+                  transition: 'background 120ms ease',
                 }}
               >
                 <Group justify="space-between" gap={4} wrap="nowrap">
-                  <Text size="sm" fw={600} truncate>{t.user.name}</Text>
+                  <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+                    <Box
+                      w={8}
+                      h={8}
+                      style={{
+                        borderRadius: 999,
+                        background: online.has(t.user._id) ? '#65a30d' : '#cbd5e1',
+                        flex: '0 0 auto',
+                      }}
+                      title={online.has(t.user._id) ? 'online' : 'offline'}
+                    />
+                    <Text size="sm" fw={600} truncate>{t.user.name}</Text>
+                  </Group>
                   {t.unread > 0 && <Badge size="xs" color="green">{t.unread}</Badge>}
                 </Group>
                 <Text size="xs" c="dimmed" truncate>{t.lastMessage}</Text>
@@ -142,9 +177,29 @@ export default function ChatBox() {
             <Text c="dimmed">Pick a user to start chatting.</Text>
           ) : (
             <>
-              <Title order={4} mb="xs">
-                {peer ? `${peer.name} (${peer.role})` : 'Conversation'}
-              </Title>
+              <Group gap={8} mb="xs" align="center">
+                <Title order={4} style={{ margin: 0 }}>
+                  {peer ? peer.name : 'Conversation'}
+                </Title>
+                {peer && (
+                  <>
+                    <Badge variant="light" color="forest" radius="xl" tt="capitalize">{peer.role}</Badge>
+                    <Group gap={4} align="center">
+                      <Box
+                        w={8}
+                        h={8}
+                        style={{
+                          borderRadius: 999,
+                          background: online.has(peer._id) ? '#65a30d' : '#cbd5e1',
+                        }}
+                      />
+                      <Text size="xs" c={online.has(peer._id) ? 'forest.7' : 'dimmed'}>
+                        {online.has(peer._id) ? 'online' : 'offline'}
+                      </Text>
+                    </Group>
+                  </>
+                )}
+              </Group>
               <Box ref={listRef} h={360} style={{ overflowY: 'auto', padding: 4 }}>
                 <Stack gap={6}>
                   {messages.map((m) => {

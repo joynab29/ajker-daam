@@ -43,6 +43,7 @@ router.post('/login', async (req, res) => {
   if (!user) return res.status(400).json({ error: 'bad credentials' })
   const ok = await bcrypt.compare(password, user.passwordHash)
   if (!ok) return res.status(400).json({ error: 'bad credentials' })
+  if (user.status === 'banned') return res.status(403).json({ error: 'account banned for repeated fraud' })
   res.json({ token: issueToken(user), user: userPayload(user) })
 })
 

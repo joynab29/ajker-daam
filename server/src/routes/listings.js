@@ -3,9 +3,11 @@ import mongoose from 'mongoose'
 import { Listing } from '../models/Listing.js'
 import { Product } from '../models/Product.js'
 import { PriceReport } from '../models/PriceReport.js'
+import { Order } from '../models/Order.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireRole } from '../middleware/role.js'
 import { upload } from '../middleware/upload.js'
+import { emit } from '../realtime.js'
 
 const router = Router()
 
@@ -27,9 +29,9 @@ router.get('/', async (req, res) => {
   if (productId) filter.productId = productId
   const listings = await Listing.find(filter)
     .sort({ createdAt: -1 })
-    .limit(100)
-    .populate('vendorId', 'name')
-    .populate('productId', 'name unit category')
+    .limit(200)
+    .populate('vendorId', 'name verified ratingAvg ratingCount delivery createdAt')
+    .populate('productId', 'name unit category imageUrl')
 
   const productIds = listings
     .map((l) => l.productId?._id)
@@ -58,10 +60,44 @@ router.get('/', async (req, res) => {
     )
   }
 
+  // Top-seller derivation: vendors in top decile of completed orders in last 30 days
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+  const vendorOrderRows = await Order.aggregate([
+    { $match: { status: { $in: ['completed', 'delivered'] }, createdAt: { $gte: since } } },
+    { $group: { _id: '$vendorId', completed: { $sum: 1 } } },
+  ])
+  const sortedCompleted = vendorOrderRows.map((r) => r.completed).sort((a, b) => b - a)
+  const topThreshold = sortedCompleted.length
+    ? sortedCompleted[Math.max(0, Math.floor(sortedCompleted.length / 10) - 1)] || sortedCompleted[0]
+    : Infinity
+  const topSellerIds = new Set(
+    vendorOrderRows.filter((r) => r.completed >= Math.max(3, topThreshold)).map((r) => r._id.toString()),
+  )
+
+  // Cheapest listing per product (Best Deal)
+  const cheapestByProduct = new Map()
+  for (const l of listings) {
+    const pid = l.productId?._id?.toString()
+    if (!pid) continue
+    const cur = cheapestByProduct.get(pid)
+    if (!cur || l.price < cur.price) cheapestByProduct.set(pid, l)
+  }
+
+  function reliablePricing(listingPrice, productAvg) {
+    if (productAvg == null || productAvg <= 0) return false
+    return Math.abs(listingPrice - productAvg) / productAvg <= 0.15
+  }
+
   const enriched = listings.map((l) => {
     const obj = l.toObject()
     const pid = l.productId?._id?.toString()
-    obj.comparison = (pid && statsByProduct[pid]) || { count: 0 }
+    const cmp = (pid && statsByProduct[pid]) || { count: 0 }
+    obj.comparison = cmp
+    obj.bestDeal = pid && cheapestByProduct.get(pid)?._id?.toString() === l._id.toString()
+    obj.reliablePricing = reliablePricing(l.price, cmp.avg)
+    obj.topSeller = !!(l.vendorId && topSellerIds.has(l.vendorId._id.toString()))
+    obj.diffPct =
+      cmp.count > 0 && cmp.avg > 0 ? ((l.price - cmp.avg) / cmp.avg) * 100 : null
     return obj
   })
 
@@ -110,6 +146,7 @@ router.post('/', requireAuth, requireRole('vendor'), upload.single('photo'), asy
   const populated = await Listing.findById(listing._id)
     .populate('vendorId', 'name')
     .populate('productId', 'name unit category')
+  emit('listing:new', populated)
   res.json({ listing: populated })
 })
 

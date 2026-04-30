@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom'
 import { Group, Anchor, Button, Text, Badge } from '@mantine/core'
 import { useAuth } from './AuthContext.jsx'
 import Notifier from './Notifier.jsx'
-import InstallButton from './InstallButton.jsx'
 
 const linkStyle = { color: 'rgba(255,255,255,0.86)', fontWeight: 500, fontSize: 14 }
 const activeStyle = { color: '#bef264', fontWeight: 700, fontSize: 14 }
@@ -74,7 +73,6 @@ export default function Nav() {
       {user && user.role !== 'admin' && <NavLink to="/submit" label="Submit" />}
       {user && user.role === 'admin' && <NavLink to="/admin" label="Admin" />}
       <div style={{ flex: 1 }} />
-      <InstallButton />
       <Notifier />
       {user ? (
         <>
