@@ -158,6 +158,7 @@ export default function Marketplace() {
   const [orderContact, setOrderContact] = useState('')
   const [orderMessage, setOrderMessage] = useState('')
   const [orderDistrict, setOrderDistrict] = useState('')
+  const [orderFulfillment, setOrderFulfillment] = useState('cod') // 'pickup' | 'cod'
   const [orderErr, setOrderErr] = useState('')
   const [orderOk, setOrderOk] = useState('')
 
@@ -279,17 +280,19 @@ export default function Marketplace() {
     setOrderContact('')
     setOrderMessage('')
     setOrderDistrict(listing.district || '')
+    setOrderFulfillment('cod')
     setOrderErr('')
     setOrderOk('')
   }
 
   const orderDeliveryFee = useMemo(() => {
     if (!orderTarget) return 0
+    if (orderFulfillment === 'pickup') return 0
     const v = orderTarget.vendorId
     if (!v?.delivery) return 0
     const same = orderDistrict && orderTarget.district && orderDistrict.toLowerCase() === orderTarget.district.toLowerCase()
     return same ? v.delivery.sameDistrictFee || 0 : v.delivery.otherDistrictFee || 0
-  }, [orderTarget, orderDistrict])
+  }, [orderTarget, orderDistrict, orderFulfillment])
 
   async function placeOrder(e) {
     e.preventDefault()
@@ -303,7 +306,8 @@ export default function Marketplace() {
           quantity: Number(orderQty),
           contact: orderContact,
           message: orderMessage,
-          deliveryDistrict: orderDistrict,
+          fulfillment: orderFulfillment,
+          deliveryDistrict: orderFulfillment === 'cod' ? orderDistrict : '',
         }),
       })
       setOrderOk('Order placed. The vendor will confirm shortly.')
@@ -822,6 +826,56 @@ export default function Marketplace() {
                           <Text size="xs" c="dimmed" mt="xs">No community price baseline yet.</Text>
                         )}
 
+                        {/* Public reviews of this vendor */}
+                        {l.recentReviews && l.recentReviews.length > 0 && (
+                          <Paper
+                            p="sm"
+                            radius="lg"
+                            mt="md"
+                            style={{ background: '#fefce8', border: '1px solid #fef08a' }}
+                          >
+                            <Group justify="space-between" align="center" mb={4}>
+                              <Text size="xs" fw={700} tt="uppercase" c="forest.7" style={{ letterSpacing: '0.08em' }}>
+                                Recent reviews
+                              </Text>
+                              {(v.ratingCount || 0) > 0 && (
+                                <Text size="xs" c="dimmed">
+                                  {v.ratingAvg?.toFixed(1)} avg · {v.ratingCount}
+                                </Text>
+                              )}
+                            </Group>
+                            <Stack gap={6}>
+                              {l.recentReviews.slice(0, 2).map((r) => (
+                                <Box key={r._id}>
+                                  <Group gap={6} wrap="nowrap">
+                                    <Text style={{ color: '#facc15', letterSpacing: 1 }} size="xs" fw={700}>
+                                      {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                                    </Text>
+                                    <Text size="xs" fw={700} c="forest.7">{r.consumerName}</Text>
+                                    <Text size="xs" c="dimmed">· {new Date(r.createdAt).toLocaleDateString()}</Text>
+                                  </Group>
+                                  {r.text && (
+                                    <Text size="xs" c="dimmed" lineClamp={2} mt={2}>"{r.text}"</Text>
+                                  )}
+                                </Box>
+                              ))}
+                            </Stack>
+                            {l.recentReviews.length > 2 && v._id && (
+                              <Anchor
+                                onClick={() => showVendor(v._id)}
+                                size="xs"
+                                fw={600}
+                                c="forest.7"
+                                style={{ cursor: 'pointer' }}
+                                mt={6}
+                                display="block"
+                              >
+                                See all {v.ratingCount} reviews →
+                              </Anchor>
+                            )}
+                          </Paper>
+                        )}
+
                         {/* Vendor row */}
                         <Group justify="space-between" align="center" mt="md" wrap="nowrap">
                           <Anchor onClick={() => v._id && showVendor(v._id)} style={{ cursor: 'pointer', textDecoration: 'none' }}>
@@ -966,15 +1020,82 @@ export default function Marketplace() {
                   </Stack>
                 </Group>
               </Paper>
+              <Stack gap={6}>
+                <Text size="xs" tt="uppercase" fw={700} c="forest.7" style={{ letterSpacing: '0.1em' }}>How would you like it?</Text>
+                <SimpleGrid cols={2} spacing="sm">
+                  <Paper
+                    p="md"
+                    radius="lg"
+                    onClick={() => setOrderFulfillment('pickup')}
+                    style={{
+                      cursor: 'pointer',
+                      border: orderFulfillment === 'pickup' ? '2px solid #65a30d' : '1px solid rgba(11,61,46,0.08)',
+                      background: orderFulfillment === 'pickup' ? 'linear-gradient(135deg, #ecfccb 0%, #ffffff 75%)' : '#fff',
+                      transition: 'all 160ms ease',
+                    }}
+                  >
+                    <Group justify="space-between" align="flex-start" wrap="nowrap">
+                      <Stack gap={2}>
+                        <Text fw={800} c="forest.7">🚶 Pickup</Text>
+                        <Text size="xs" c="dimmed">Collect from {orderTarget.area || orderTarget.district || 'vendor'}</Text>
+                        <Text size="xs" c="forest.7" fw={600} mt={4}>No delivery fee</Text>
+                      </Stack>
+                      {orderFulfillment === 'pickup' && (
+                        <Box style={{ width: 22, height: 22, borderRadius: 999, background: '#bef264', color: '#0b3d2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>✓</Box>
+                      )}
+                    </Group>
+                  </Paper>
+                  <Paper
+                    p="md"
+                    radius="lg"
+                    onClick={() => setOrderFulfillment('cod')}
+                    style={{
+                      cursor: 'pointer',
+                      border: orderFulfillment === 'cod' ? '2px solid #65a30d' : '1px solid rgba(11,61,46,0.08)',
+                      background: orderFulfillment === 'cod' ? 'linear-gradient(135deg, #ecfccb 0%, #ffffff 75%)' : '#fff',
+                      transition: 'all 160ms ease',
+                    }}
+                  >
+                    <Group justify="space-between" align="flex-start" wrap="nowrap">
+                      <Stack gap={2}>
+                        <Text fw={800} c="forest.7">💵 Cash on delivery</Text>
+                        <Text size="xs" c="dimmed">Pay when it arrives</Text>
+                        <Text size="xs" c="forest.7" fw={600} mt={4}>
+                          🚚 ৳{orderTarget.vendorId?.delivery?.sameDistrictFee || 0} same · ৳{orderTarget.vendorId?.delivery?.otherDistrictFee || 0} other
+                        </Text>
+                      </Stack>
+                      {orderFulfillment === 'cod' && (
+                        <Box style={{ width: 22, height: 22, borderRadius: 999, background: '#bef264', color: '#0b3d2e', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>✓</Box>
+                      )}
+                    </Group>
+                  </Paper>
+                </SimpleGrid>
+              </Stack>
+
               <NumberInput label="Quantity" value={orderQty} onChange={(v) => setOrderQty(v ?? 1)} min={1} required radius="xl" />
               <TextInput label="Your contact" placeholder="phone or email" value={orderContact} onChange={(e) => setOrderContact(e.target.value)} required radius="xl" />
-              <TextInput label="Delivery district" placeholder="e.g. Dhaka" value={orderDistrict} onChange={(e) => setOrderDistrict(e.target.value)} radius="xl" />
+              {orderFulfillment === 'cod' && (
+                <TextInput
+                  label="Delivery district"
+                  placeholder="e.g. Dhaka"
+                  value={orderDistrict}
+                  onChange={(e) => setOrderDistrict(e.target.value)}
+                  radius="xl"
+                  required
+                />
+              )}
               <Textarea label="Message" placeholder="optional note for the vendor" value={orderMessage} onChange={(e) => setOrderMessage(e.target.value)} radius="xl" />
               <Paper p="sm" radius="lg" style={{ background: '#f7fde9', border: '1px solid #ecfccb' }}>
                 <Group justify="space-between"><Text size="sm">Items</Text><Text size="sm">৳{(Number(orderTarget.price) * Number(orderQty || 0)).toFixed(2)}</Text></Group>
-                <Group justify="space-between"><Text size="sm">🚚 Delivery</Text><Text size="sm">৳{orderDeliveryFee}</Text></Group>
+                <Group justify="space-between">
+                  <Text size="sm">{orderFulfillment === 'pickup' ? '🚶 Pickup' : '🚚 Delivery'}</Text>
+                  <Text size="sm">{orderFulfillment === 'pickup' ? 'Free' : `৳${orderDeliveryFee}`}</Text>
+                </Group>
                 <Divider my={6} />
-                <Group justify="space-between"><Text fw={800} c="forest.7">Total</Text><Text fw={800} c="forest.7">৳{(Number(orderTarget.price) * Number(orderQty || 0) + Number(orderDeliveryFee || 0)).toFixed(2)}</Text></Group>
+                <Group justify="space-between">
+                  <Text fw={800} c="forest.7">Total {orderFulfillment === 'cod' && <Text span size="xs" c="dimmed" fw={500}>(pay on delivery)</Text>}</Text>
+                  <Text fw={800} c="forest.7">৳{(Number(orderTarget.price) * Number(orderQty || 0) + Number(orderDeliveryFee || 0)).toFixed(2)}</Text>
+                </Group>
               </Paper>
               <Button type="submit" radius="xl" color="lime" styles={{ root: { color: '#0b3d2e', fontWeight: 700 } }}>
                 Place order

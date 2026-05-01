@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import mongoose from 'mongoose'
 import { User } from '../models/User.js'
 import { PriceReport } from '../models/PriceReport.js'
 import { Review } from '../models/Review.js'
@@ -6,6 +7,7 @@ import { Order } from '../models/Order.js'
 import { Listing } from '../models/Listing.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireRole } from '../middleware/role.js'
+import { emit } from '../realtime.js'
 
 const router = Router()
 
@@ -53,6 +55,58 @@ router.get('/vendors/:id/reviews', async (req, res) => {
   res.json({ reviews })
 })
 
+// Consumer leaves a review for a vendor — gated by a completed order with that vendor.
+router.post('/vendors/:id/reviews', requireAuth, async (req, res) => {
+  const vendorId = req.params.id
+  if (!mongoose.isValidObjectId(vendorId)) return res.status(400).json({ error: 'invalid vendor id' })
+  const { orderId, rating, text } = req.body || {}
+  const numRating = Math.round(Number(rating))
+  if (!numRating || numRating < 1 || numRating > 5) {
+    return res.status(400).json({ error: 'rating must be 1–5' })
+  }
+  // Must have a completed order with this vendor (optionally pinned to a specific orderId).
+  const orderQuery = { consumerId: req.user.id, vendorId, status: 'completed' }
+  if (orderId) orderQuery._id = orderId
+  const order = await Order.findOne(orderQuery)
+  if (!order) return res.status(403).json({ error: 'you can only review a vendor after a completed order' })
+
+  // One review per (consumer, order) — upsert allows editing.
+  const review = await Review.findOneAndUpdate(
+    { vendorId, consumerId: req.user.id, orderId: order._id },
+    {
+      vendorId,
+      consumerId: req.user.id,
+      orderId: order._id,
+      rating: numRating,
+      text: String(text || '').slice(0, 500),
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  )
+
+  const agg = await Review.aggregate([
+    { $match: { vendorId: new mongoose.Types.ObjectId(vendorId) } },
+    { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } },
+  ])
+  if (agg[0]) {
+    await User.findByIdAndUpdate(vendorId, {
+      ratingAvg: +agg[0].avg.toFixed(2),
+      ratingCount: agg[0].count,
+    })
+  }
+
+  const consumer = await User.findById(req.user.id).select('name')
+  emit('review:new', {
+    _id: review._id,
+    vendorId,
+    rating: review.rating,
+    text: review.text,
+    consumerName: consumer?.name || '',
+    orderId: order._id,
+  })
+
+  res.json({ review })
+})
+
 router.get('/:id/reputation', async (req, res) => {
   const user = await User.findById(req.params.id).select('name role createdAt')
   if (!user) return res.status(404).json({ error: 'not found' })
@@ -76,7 +130,7 @@ router.get('/leaderboard', async (_req, res) => {
       },
     },
     { $sort: { total: -1 } },
-    { $limit: 20 },
+    { $limit: 500 },
   ])
   const ids = rows.map((r) => r._id)
   const users = await User.find({ _id: { $in: ids } }).select('name role')

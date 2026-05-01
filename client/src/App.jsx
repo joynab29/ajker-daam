@@ -15,6 +15,7 @@ import History from './pages/History.jsx'
 import Anomalies from './pages/Anomalies.jsx'
 import Leaderboard from './pages/Leaderboard.jsx'
 import Marketplace from './pages/Marketplace.jsx'
+import Orders from './pages/Orders.jsx'
 import Chat from './pages/Chat.jsx'
 import ChatBox from './pages/ChatBox.jsx'
 import PriceHeatmap from './pages/PriceHeatmap.jsx'
@@ -35,6 +36,7 @@ function App() {
             <Route path="/anomalies" element={<Anomalies />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/orders" element={<Orders />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/messages" element={<ChatBox />} />
             <Route path="/heatmap" element={<PriceHeatmap />} />

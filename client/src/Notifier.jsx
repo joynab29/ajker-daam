@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ActionIcon, Indicator, Popover, Stack, Group, Text, Box, Button, Badge } from '@mantine/core'
 import { socket } from './socket.js'
+import { api } from './api.js'
 
 const MAX = 30
 
@@ -28,6 +29,25 @@ export default function Notifier() {
   useEffect(() => {
     socket.connect()
 
+    // Hydrate from persisted feed (last 30 days, server-side TTL)
+    api('/notifications/feed?limit=100')
+      .then((d) => {
+        const fresh = (d.items || []).filter((it) => {
+          const key = `${it.kind}:${it.refId}`
+          if (seen.current.has(key)) return false
+          seen.current.add(key)
+          return true
+        })
+        if (fresh.length) {
+          setItems((prev) => {
+            const combined = [...fresh, ...prev]
+            combined.sort((a, b) => b.at - a.at)
+            return combined.slice(0, MAX)
+          })
+        }
+      })
+      .catch(() => {})
+
     function pushItem(item) {
       const key = `${item.kind}:${item.refId}`
       if (seen.current.has(key)) return
@@ -43,7 +63,7 @@ export default function Notifier() {
       const sign = a.direction === 'up' ? '+' : ''
       pushItem({
         id: uid(),
-        kind: 'spike',
+        kind: dir === 'up' ? 'spike' : 'drop',
         refId: a.priceReport?._id || uid(),
         title: dir === 'up' ? `Price spike: ${name}` : `Price drop: ${name}`,
         body: `${a.priceReport.price}/${a.priceReport.unit} (${sign}${change}% vs avg ${a.avg.toFixed(2)})`,
@@ -69,13 +89,62 @@ export default function Notifier() {
         at: Date.now(),
       })
     }
+    function onOrderNew(o) {
+      const title = o.listingId?.title || 'your listing'
+      const fulfillment = o.fulfillment === 'pickup' ? 'Pickup' : 'Cash on delivery'
+      pushItem({
+        id: uid(),
+        kind: 'order',
+        refId: `${o._id}:placed`,
+        title: `New order: ${title}`,
+        body: `${o.consumerName || 'A consumer'} ordered ${o.quantity} × ${title} · ${fulfillment}`,
+        link: '/orders',
+        icon: '🛒',
+        accent: '#ecfccb',
+        at: Date.now(),
+      })
+    }
+    function onReview(r) {
+      const stars = '★'.repeat(Math.max(1, Math.min(5, Number(r.rating) || 0)))
+      pushItem({
+        id: uid(),
+        kind: 'review',
+        refId: r._id?.toString() || uid(),
+        title: `New review · ${stars}`,
+        body: r.text ? `"${String(r.text).slice(0, 90)}"` : `${r.consumerName || 'A buyer'} rated you ${r.rating}/5`,
+        link: '/marketplace',
+        icon: '⭐',
+        accent: '#fef9c3',
+        at: Date.now(),
+      })
+    }
+    function onOrderStatus(o) {
+      const title = o.listingId?.title || 'your order'
+      pushItem({
+        id: uid(),
+        kind: 'order_status',
+        refId: `${o._id}:${o.status}`,
+        title: `Order ${o.status}: ${title}`,
+        body: `Quantity ${o.quantity} × ${title} is now ${o.status}.`,
+        link: '/orders',
+        icon: o.status === 'rejected' ? '⚠️' : o.status === 'fulfilled' ? '✅' : '📦',
+        accent: o.status === 'rejected' ? '#fee2e2' : '#ecfccb',
+        at: Date.now(),
+      })
+    }
 
     socket.on('price:spike', onSpike)
     socket.on('listing:new', onListing)
+    socket.on('order:new', onOrderNew)
+    socket.on('order:status', onOrderStatus)
+    socket.on('review:new', onReview)
 
     return () => {
       socket.off('price:spike', onSpike)
       socket.off('listing:new', onListing)
+      socket.off('order:new', onOrderNew)
+      socket.off('order:status', onOrderStatus)
+      socket.off('review:new', onReview)
     }
   }, [])
 

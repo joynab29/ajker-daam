@@ -4,6 +4,7 @@ import { Listing } from '../models/Listing.js'
 import { Product } from '../models/Product.js'
 import { PriceReport } from '../models/PriceReport.js'
 import { Order } from '../models/Order.js'
+import { Review } from '../models/Review.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireRole } from '../middleware/role.js'
 import { upload } from '../middleware/upload.js'
@@ -74,6 +75,29 @@ router.get('/', async (req, res) => {
     vendorOrderRows.filter((r) => r.completed >= Math.max(3, topThreshold)).map((r) => r._id.toString()),
   )
 
+  // Recent reviews per vendor (3 most recent, with consumer names)
+  const vendorIds = [...new Set(listings.map((l) => l.vendorId?._id?.toString()).filter(Boolean))]
+    .map((id) => new mongoose.Types.ObjectId(id))
+  const reviewsByVendor = {}
+  if (vendorIds.length) {
+    const reviews = await Review.find({ vendorId: { $in: vendorIds } })
+      .sort({ createdAt: -1 })
+      .limit(60)
+      .populate('consumerId', 'name')
+    for (const r of reviews) {
+      const vid = r.vendorId.toString()
+      if (!reviewsByVendor[vid]) reviewsByVendor[vid] = []
+      if (reviewsByVendor[vid].length >= 3) continue
+      reviewsByVendor[vid].push({
+        _id: r._id,
+        rating: r.rating,
+        text: r.text,
+        createdAt: r.createdAt,
+        consumerName: r.consumerId?.name || 'Anonymous',
+      })
+    }
+  }
+
   // Cheapest listing per product (Best Deal)
   const cheapestByProduct = new Map()
   for (const l of listings) {
@@ -98,6 +122,7 @@ router.get('/', async (req, res) => {
     obj.topSeller = !!(l.vendorId && topSellerIds.has(l.vendorId._id.toString()))
     obj.diffPct =
       cmp.count > 0 && cmp.avg > 0 ? ((l.price - cmp.avg) / cmp.avg) * 100 : null
+    obj.recentReviews = (l.vendorId && reviewsByVendor[l.vendorId._id.toString()]) || []
     return obj
   })
 

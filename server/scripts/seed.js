@@ -11,6 +11,7 @@ import { Message } from '../src/models/Message.js'
 import { CommunityMessage } from '../src/models/CommunityMessage.js'
 import { PushSubscription } from '../src/models/PushSubscription.js'
 import { Review } from '../src/models/Review.js'
+import { Notification } from '../src/models/Notification.js'
 
 const day = 24 * 60 * 60 * 1000
 const now = Date.now()
@@ -29,6 +30,7 @@ async function main() {
     CommunityMessage.deleteMany({}),
     PushSubscription.deleteMany({}),
     Review.deleteMany({}),
+    Notification.deleteMany({}),
   ])
 
   async function mkUser(name, email, password, role, extra = {}) {
@@ -218,9 +220,33 @@ async function main() {
 
   const tomatoListing = listings.find((l) => l.title === 'Fresh Tomatoes' && String(l.vendorId) === String(samia._id))
   const onionListing  = listings.find((l) => l.title === 'Onion' && String(l.vendorId) === String(nilufar._id))
+  const placedAt = ago(0.05)            // ~1 hour ago
+  const tomatoConfirmedAt = ago(0.04)
+  const tomatoPackingAt   = ago(0.025)
+  const tomatoDispatchedAt = ago(0.012)
   await Order.insertMany([
-    { listingId: tomatoListing._id, vendorId: samia._id,   consumerId: itmam._id, consumerName: 'Itmam', quantity: 3, contact: '01700-001001', message: 'Need by tomorrow morning',  status: 'pending'  },
-    { listingId: onionListing._id,  vendorId: nilufar._id, consumerId: rina._id,  consumerName: 'Rina',  quantity: 5, contact: '01700-001002', message: 'Please confirm freshness', status: 'accepted' },
+    {
+      listingId: tomatoListing._id, vendorId: samia._id, consumerId: itmam._id,
+      consumerName: 'Itmam', quantity: 3, contact: '01700-001001', message: 'Need by tomorrow morning',
+      fulfillment: 'cod', deliveryDistrict: 'Dhaka', deliveryFee: 40,
+      status: 'dispatched',
+      promisedAt: new Date(Date.now() + 2 * 60 * 60 * 1000),
+      timestamps: {
+        placedAt,
+        confirmedAt: tomatoConfirmedAt,
+        packingAt: tomatoPackingAt,
+        dispatchedAt: tomatoDispatchedAt,
+      },
+      createdAt: placedAt,
+    },
+    {
+      listingId: onionListing._id, vendorId: nilufar._id, consumerId: rina._id,
+      consumerName: 'Rina', quantity: 5, contact: '01700-001002', message: 'Please confirm freshness',
+      fulfillment: 'pickup', deliveryFee: 0,
+      status: 'placed',
+      timestamps: { placedAt: ago(0.02) },
+      createdAt: ago(0.02),
+    },
   ])
 
   // Reviews → drives ratingAvg/ratingCount on the vendor profile
@@ -300,6 +326,40 @@ async function main() {
     { senderId: admin._id, receiverId: sajib._id, message: 'Hi Sajib, your tomato report at 90 in Segunbagicha was flagged as an anomaly. Could you confirm where you saw it?', isRead: false, createdAt: ago(0.8) },
   ])
 
+  // ----- Alert notifications: spread across the last 30 days -----
+  await Notification.insertMany([
+    // 28 days ago — first onion spike of the month
+    { kind: 'spike', refId: 'demo-onion-spike-28d', title: 'Price spike: Onion', body: '92/kg (+48% vs avg 62.00)', link: `/products/${byName['Onion']._id}`, icon: '📈', accent: '#fee2e2', createdAt: ago(28) },
+    // 24 days ago — listing
+    { kind: 'listing', refId: 'demo-listing-rice-24d', title: 'New listing: Rice (Miniket)', body: 'Nilufar listed 78/kg in Mirpur, Dhaka', link: '/marketplace', icon: '🛒', accent: '#ecfccb', createdAt: ago(24) },
+    // 21 days ago — tomato peak (matches the historical curve)
+    { kind: 'spike', refId: 'demo-tomato-spike-21d', title: 'Price spike: Fresh Tomatoes', body: '95/kg (+72% vs avg 55.00)', link: `/products/${byName['Fresh Tomatoes']._id}`, icon: '📈', accent: '#fee2e2', createdAt: ago(21) },
+    // 18 days ago
+    { kind: 'listing', refId: 'demo-listing-egg-18d', title: 'New listing: Egg', body: 'Rafiq listed 145/dozen in New Market, Dhaka', link: '/marketplace', icon: '🛒', accent: '#ecfccb', createdAt: ago(18) },
+    // 15 days ago — onion drop
+    { kind: 'drop', refId: 'demo-onion-drop-15d', title: 'Price drop: Onion', body: '38/kg (-39% vs avg 62.00)', link: `/products/${byName['Onion']._id}`, icon: '📉', accent: '#dcfce7', createdAt: ago(15) },
+    // 13 days ago
+    { kind: 'spike', refId: 'demo-hilsa-spike-13d', title: 'Price spike: Hilsa', body: '2200/kg (+47% vs avg 1490.00)', link: `/products/${byName['Hilsa']._id}`, icon: '📈', accent: '#fee2e2', createdAt: ago(13) },
+    // 12 days ago
+    { kind: 'listing', refId: 'demo-listing-tomato-12d', title: 'New listing: Fresh Tomatoes', body: 'Rafiq listed 60/kg in Karwan Bazar, Dhaka', link: '/marketplace', icon: '🛒', accent: '#ecfccb', createdAt: ago(12) },
+    // 10 days ago
+    { kind: 'drop', refId: 'demo-tomato-drop-10d', title: 'Price drop: Fresh Tomatoes', body: '40/kg (-30% vs avg 57.00)', link: `/products/${byName['Fresh Tomatoes']._id}`, icon: '📉', accent: '#dcfce7', createdAt: ago(10) },
+    // 7 days ago
+    { kind: 'spike', refId: 'demo-onion-spike-7d', title: 'Price spike: Onion', body: '85/kg (+37% vs avg 62.00)', link: `/products/${byName['Onion']._id}`, icon: '📈', accent: '#fee2e2', createdAt: ago(7) },
+    // 5 days ago
+    { kind: 'drop', refId: 'demo-tomato-drop-5d', title: 'Price drop: Fresh Tomatoes', body: '32/kg (-44% vs avg 57.00)', link: `/products/${byName['Fresh Tomatoes']._id}`, icon: '📉', accent: '#dcfce7', createdAt: ago(5) },
+    // 4 days ago
+    { kind: 'listing', refId: 'demo-listing-mustard-4d', title: 'New listing: Mustard Oil', body: 'Nilufar listed 250/L in Chittagong, Chittagong', link: '/marketplace', icon: '🛒', accent: '#ecfccb', createdAt: ago(4) },
+    // 2 days ago — Itmam reports tomato anomaly
+    { kind: 'spike', refId: 'demo-tomato-spike-2d', title: 'Price spike: Fresh Tomatoes', body: '90/kg (+58% vs avg 57.00)', link: `/products/${byName['Fresh Tomatoes']._id}`, icon: '📈', accent: '#fee2e2', createdAt: ago(2) },
+    // 1 day ago — onion recent surge
+    { kind: 'spike', refId: 'demo-onion-spike-1d', title: 'Price spike: Onion', body: '85/kg (+37% vs avg 62.00)', link: `/products/${byName['Onion']._id}`, icon: '📈', accent: '#fee2e2', createdAt: ago(1) },
+    // 1 day ago — Rui Fish listing (the new product)
+    { kind: 'listing', refId: 'demo-listing-rui-1d', title: 'New listing: Rui Fish', body: 'Rafiq listed 400/kg in Sowari Ghat, Dhaka', link: '/marketplace', icon: '🛒', accent: '#ecfccb', createdAt: ago(1) },
+    // today
+    { kind: 'listing', refId: 'demo-listing-tomato-today', title: 'New listing: Fresh Tomatoes', body: 'Samia listed 80/kg in Segunbagicha, Dhaka', link: '/marketplace', icon: '🛒', accent: '#ecfccb', createdAt: ago(0.1) },
+  ])
+
   console.log('seed complete')
   console.log('counts:', {
     users: await User.countDocuments(),
@@ -310,6 +370,7 @@ async function main() {
     communityMessages: await CommunityMessage.countDocuments(),
     directMessages: await Message.countDocuments(),
     reviews: await Review.countDocuments(),
+    notifications: await Notification.countDocuments(),
   })
   await mongoose.disconnect()
 }

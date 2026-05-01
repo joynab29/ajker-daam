@@ -11,6 +11,9 @@ import {
   Center,
   Loader,
   Tooltip as MTooltip,
+  TextInput,
+  ActionIcon,
+  Button,
 } from '@mantine/core'
 import {
   BarChart,
@@ -130,6 +133,95 @@ function StatCard({ eyebrow, value, sub, accent, icon }) {
   )
 }
 
+function RankCard({ row, rank, highlight = false }) {
+  const badges = trustBadges(row, rank)
+  const tp = trustPct(row)
+  return (
+    <Paper
+      className="lb-card"
+      style={{
+        ...cardStyle,
+        border: highlight ? '2px solid #65a30d' : cardStyle.border,
+        boxShadow: highlight ? '0 18px 40px rgba(101,163,13,0.22)' : cardStyle.boxShadow,
+      }}
+    >
+      <Group justify="space-between" align="flex-start" wrap="nowrap">
+        <Group gap="md" wrap="nowrap">
+          <Box style={{ position: 'relative' }}>
+            <Avatar name={row.user.name} size={56} />
+            <Box
+              style={{
+                position: 'absolute',
+                bottom: -4,
+                right: -4,
+                background: '#fff',
+                color: '#0b3d2e',
+                borderRadius: 999,
+                width: 26,
+                height: 26,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: 12,
+                boxShadow: '0 4px 10px rgba(11,61,46,0.18)',
+                border: '2px solid #bef264',
+              }}
+            >
+              {rank}
+            </Box>
+          </Box>
+          <Stack gap={2}>
+            <Text fw={700} c="forest.7">{row.user.name}</Text>
+            <Group gap={4}>
+              <Badge size="xs" radius="xl" color="forest" variant="light" tt="capitalize">{row.user.role}</Badge>
+              <Text size="xs" c="dimmed">· {row.total} reports</Text>
+            </Group>
+          </Stack>
+        </Group>
+        <Stack gap={0} ta="right">
+          <Text size="xs" c="dimmed">Score</Text>
+          <Text fw={800} fz={24} c="forest.7" style={{ lineHeight: 1.05 }}>{row.score}</Text>
+        </Stack>
+      </Group>
+
+      <Group gap={4} mt="sm" wrap="wrap">
+        {badges.map((b) => (
+          <MTooltip key={b.key} label={b.label} withArrow>
+            <Badge
+              color={b.color}
+              variant={b.color === 'lime' ? 'filled' : 'light'}
+              radius="xl"
+              styles={b.color === 'lime' ? { root: { color: '#0b3d2e' } } : undefined}
+            >
+              {b.icon} {b.label}
+            </Badge>
+          </MTooltip>
+        ))}
+      </Group>
+
+      <Group justify="space-between" mt="md" mb={4}>
+        <Text size="xs" c="dimmed">Trust ratio</Text>
+        <Text size="xs" fw={700} c={tp >= 90 ? 'forest.7' : tp >= 70 ? 'lime.7' : 'red.7'}>{tp.toFixed(0)}%</Text>
+      </Group>
+      <div className="progress-track">
+        <div className="progress-fill" style={{ width: `${tp}%` }} />
+      </div>
+
+      <Group gap="md" mt="sm">
+        <Stack gap={0}>
+          <Text size="xs" c="dimmed">Anomalies</Text>
+          <Text fw={700}>{row.anomalies}</Text>
+        </Stack>
+        <Stack gap={0}>
+          <Text size="xs" c="dimmed">Flagged</Text>
+          <Text fw={700} c={row.flagged > 0 ? 'red.7' : 'forest.7'}>{row.flagged}</Text>
+        </Stack>
+      </Group>
+    </Paper>
+  )
+}
+
 function PodiumStep({ row, rank, height, accent }) {
   const order = rank === 1 ? 2 : rank === 2 ? 1 : 3
   const trophy = rank === 1 ? '🏆' : rank === 2 ? '🥈' : '🥉'
@@ -189,10 +281,24 @@ function PodiumStep({ row, rank, height, accent }) {
 
 export default function Leaderboard() {
   const [rows, setRows] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     api('/users/leaderboard').then((d) => setRows(d.leaderboard || []))
   }, [])
+
+  // Annotate rows with their absolute rank before any filtering happens
+  const ranked = useMemo(() => (rows || []).map((r, i) => ({ ...r, rank: i + 1 })), [rows])
+
+  const matches = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return []
+    return ranked.filter((r) => {
+      const name = (r.user?.name || '').toLowerCase()
+      const role = (r.user?.role || '').toLowerCase()
+      return name.includes(q) || role.includes(q)
+    })
+  }, [ranked, search])
 
   const stats = useMemo(() => {
     if (!rows) return { contributors: 0, reports: 0, flagged: 0, avgScore: 0 }
@@ -224,8 +330,9 @@ export default function Leaderboard() {
     )
   }
 
-  const top3 = rows.slice(0, 3)
-  const rest = rows.slice(3)
+  const top3 = ranked.slice(0, 3)
+  const rest = ranked.slice(3)
+  const searching = search.trim().length > 0
 
   return (
     <Stack gap="xl">
@@ -269,7 +376,71 @@ export default function Leaderboard() {
         <StatCard eyebrow="Flagged" value={stats.flagged} sub="As fraud" accent="#fee2e2" icon="🚩" />
       </SimpleGrid>
 
-      {top3.length > 0 && (
+      <Paper style={cardStyle}>
+        <Group justify="space-between" align="end" wrap="wrap" gap="md">
+          <Stack gap={4} style={{ flex: 1, minWidth: 240 }}>
+            <Text size="xs" fw={700} tt="uppercase" c="forest.7" style={{ letterSpacing: '0.1em' }}>Find a user</Text>
+            <TextInput
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name or role (e.g. Itmam, vendor)…"
+              radius="xl"
+              size="md"
+              leftSection={<span>🔎</span>}
+              rightSection={
+                search ? (
+                  <ActionIcon variant="subtle" onClick={() => setSearch('')} aria-label="clear">×</ActionIcon>
+                ) : null
+              }
+            />
+          </Stack>
+          {searching && (
+            <Stack gap={2} ta="right">
+              <Text size="xs" c="dimmed">Match{matches.length === 1 ? '' : 'es'}</Text>
+              <Text fw={800} c="forest.7" fz="xl">{matches.length}</Text>
+              {matches.length === 1 && (
+                <Badge color="lime" radius="xl" styles={{ root: { color: '#0b3d2e' } }}>
+                  Rank #{matches[0].rank}
+                </Badge>
+              )}
+            </Stack>
+          )}
+        </Group>
+      </Paper>
+
+      {searching && (
+        <Paper style={cardStyle}>
+          <Group justify="space-between" align="end" mb="md" wrap="wrap">
+            <Stack gap={2}>
+              <Text size="xs" fw={700} tt="uppercase" c="forest.7" style={{ letterSpacing: '0.1em' }}>Search results</Text>
+              <Text fw={700} size="lg">
+                {matches.length === 0
+                  ? `No matches for "${search}"`
+                  : `${matches.length} result${matches.length === 1 ? '' : 's'} for "${search}"`}
+              </Text>
+            </Stack>
+            <Button variant="subtle" color="forest" radius="xl" onClick={() => setSearch('')}>
+              Clear
+            </Button>
+          </Group>
+          {matches.length === 0 ? (
+            <Stack align="center" gap={6} py="md">
+              <Box style={{ fontSize: 36 }}>🔍</Box>
+              <Text size="sm" c="dimmed" ta="center" maw={360}>
+                No contributor matches that name. They may not have submitted any prices yet.
+              </Text>
+            </Stack>
+          ) : (
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+              {matches.map((r) => (
+                <RankCard key={r.user._id} row={r} rank={r.rank} highlight />
+              ))}
+            </SimpleGrid>
+          )}
+        </Paper>
+      )}
+
+      {!searching && top3.length > 0 && (
         <Paper style={cardStyle}>
           <Group justify="space-between" align="end" mb="md" wrap="wrap">
             <Stack gap={2}>
@@ -285,7 +456,7 @@ export default function Leaderboard() {
         </Paper>
       )}
 
-      {chartData.length > 0 && (
+      {!searching && chartData.length > 0 && (
         <Paper style={cardStyle}>
           <Group justify="space-between" align="end" mb="sm" wrap="wrap">
             <Stack gap={2}>
@@ -315,6 +486,7 @@ export default function Leaderboard() {
         </Paper>
       )}
 
+      {!searching && (
       <Paper style={cardStyle}>
         <Group justify="space-between" align="end" mb="md" wrap="wrap">
           <Stack gap={2}>
@@ -327,91 +499,13 @@ export default function Leaderboard() {
           <Text c="dimmed" size="sm">Just the podium so far. More contributors will appear here as they submit prices.</Text>
         ) : (
           <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
-            {rest.map((r, i) => {
-              const rank = i + 4
-              const badges = trustBadges(r, rank)
-              const tp = trustPct(r)
-              return (
-                <Paper key={r.user._id} className="lb-card" style={cardStyle}>
-                  <Group justify="space-between" align="flex-start" wrap="nowrap">
-                    <Group gap="md" wrap="nowrap">
-                      <Box style={{ position: 'relative' }}>
-                        <Avatar name={r.user.name} size={56} />
-                        <Box
-                          style={{
-                            position: 'absolute',
-                            bottom: -4,
-                            right: -4,
-                            background: '#fff',
-                            color: '#0b3d2e',
-                            borderRadius: 999,
-                            width: 26,
-                            height: 26,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 800,
-                            fontSize: 12,
-                            boxShadow: '0 4px 10px rgba(11,61,46,0.18)',
-                            border: '2px solid #bef264',
-                          }}
-                        >
-                          {rank}
-                        </Box>
-                      </Box>
-                      <Stack gap={2}>
-                        <Text fw={700} c="forest.7">{r.user.name}</Text>
-                        <Group gap={4}>
-                          <Badge size="xs" radius="xl" color="forest" variant="light" tt="capitalize">{r.user.role}</Badge>
-                          <Text size="xs" c="dimmed">· {r.total} reports</Text>
-                        </Group>
-                      </Stack>
-                    </Group>
-                    <Stack gap={0} ta="right">
-                      <Text size="xs" c="dimmed">Score</Text>
-                      <Text fw={800} fz={24} c="forest.7" style={{ lineHeight: 1.05 }}>{r.score}</Text>
-                    </Stack>
-                  </Group>
-
-                  <Group gap={4} mt="sm" wrap="wrap">
-                    {badges.map((b) => (
-                      <MTooltip key={b.key} label={b.label} withArrow>
-                        <Badge
-                          color={b.color}
-                          variant={b.color === 'lime' ? 'filled' : 'light'}
-                          radius="xl"
-                          styles={b.color === 'lime' ? { root: { color: '#0b3d2e' } } : undefined}
-                        >
-                          {b.icon} {b.label}
-                        </Badge>
-                      </MTooltip>
-                    ))}
-                  </Group>
-
-                  <Group justify="space-between" mt="md" mb={4}>
-                    <Text size="xs" c="dimmed">Trust ratio</Text>
-                    <Text size="xs" fw={700} c={tp >= 90 ? 'forest.7' : tp >= 70 ? 'lime.7' : 'red.7'}>{tp.toFixed(0)}%</Text>
-                  </Group>
-                  <div className="progress-track">
-                    <div className="progress-fill" style={{ width: `${tp}%` }} />
-                  </div>
-
-                  <Group gap="md" mt="sm">
-                    <Stack gap={0}>
-                      <Text size="xs" c="dimmed">Anomalies</Text>
-                      <Text fw={700}>{r.anomalies}</Text>
-                    </Stack>
-                    <Stack gap={0}>
-                      <Text size="xs" c="dimmed">Flagged</Text>
-                      <Text fw={700} c={r.flagged > 0 ? 'red.7' : 'forest.7'}>{r.flagged}</Text>
-                    </Stack>
-                  </Group>
-                </Paper>
-              )
-            })}
+            {rest.map((r) => (
+              <RankCard key={r.user._id} row={r} rank={r.rank} />
+            ))}
           </SimpleGrid>
         )}
       </Paper>
+      )}
 
       {rows.length === 0 && (
         <Paper style={cardStyle}>

@@ -67,6 +67,7 @@ export default function Nav() {
       <NavLink to="/anomalies" label="Anomalies" />
       <NavLink to="/leaderboard" label="Leaderboard" />
       <NavLink to="/marketplace" label="Marketplace" />
+      {user && <NavLink to="/orders" label="Orders" />}
       <NavLink to="/chat" label="Chat" />
       {user && <NavLink to="/messages" label="Messages" />}
       <NavLink to="/heatmap" label="Heatmap" />
